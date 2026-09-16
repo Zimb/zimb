@@ -1,0 +1,28 @@
+{
+  "name": "@zimb/landing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Zimb.app landing page (zimb.app)",
+  "scripts": {
+    "dev": "astro dev --port 5173",
+    "build": "astro build",
+    "preview": "astro preview",
+    "type-check": "astro check",
+    "lint": "eslint src --ext .ts,.astro",
+    "test": "vitest run",
+    "clean": "rm -rf dist .astro"
+  },
+  "dependencies": {
+    "astro": "^4.15.6"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.3",
+    "@astrojs/sitemap": "^3.2.0",
+    "@types/node": "^22.7.4",
+    "eslint": "^8.57.1",
+    "eslint-plugin-astro": "^1.2.4",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.1"
+  }
+}

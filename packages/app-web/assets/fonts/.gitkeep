@@ -1,0 +1,12 @@
+# Place Inter-*.ttf and JetBrainsMono-*.ttf files here.
+# Download from:
+#   Inter:         https://github.com/rsms/inter/releases
+#   JetBrainsMono: https://github.com/JetBrains/JetBrainsMono/releases
+#
+# Required files (see pubspec.yaml):
+#   Inter-Regular.ttf
+#   Inter-Medium.ttf
+#   Inter-SemiBold.ttf
+#   Inter-Bold.ttf
+#   JetBrainsMono-Regular.ttf
+#   JetBrainsMono-Bold.ttf

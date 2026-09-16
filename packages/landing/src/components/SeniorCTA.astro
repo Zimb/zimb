@@ -1,0 +1,67 @@
+---
+// Senior recruitment CTA
+---
+
+<section id="seniors" class="seniors">
+  <div class="container">
+    <h2>Tu es senior ?</h2>
+    <p class="lead">
+      Gagne 40 € en 45 minutes. Pas de prospection, pas de devis, pas de mission longue.
+      Tu choisis les bugs qui te parlent, tu résous, tu es payé.
+    </p>
+    <ul class="perks">
+      <li>💰 Paiement instantané via Stripe Connect</li>
+      <li>🛡️ Pas de fonds bloqués — capture garantie après validation</li>
+      <li>⚖️ Arbitrage impartial en cas de litige (SLA 48 h)</li>
+      <li>🎯 Tickets pré-qualifiés, contexte GitHub complet</li>
+    </ul>
+    <a href="/seniors/apply" class="btn btn-primary">Postuler</a>
+  </div>
+</section>
+
+<style>
+  .seniors {
+    padding: 80px 0;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-urgent-critical) 100%);
+    color: white;
+    text-align: center;
+  }
+
+  .seniors h2,
+  .seniors .lead {
+    color: white;
+  }
+
+  .lead {
+    font-size: 1.125rem;
+    max-width: 640px;
+    margin: 16px auto 32px;
+    opacity: 0.95;
+  }
+
+  .perks {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 32px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    max-width: 800px;
+    margin: 0 auto 32px;
+  }
+
+  .perks li {
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    backdrop-filter: blur(8px);
+    text-align: left;
+  }
+
+  .btn-primary {
+    background: white;
+    color: var(--color-primary);
+    padding: 14px 32px;
+    font-size: 1.125rem;
+  }
+</style>

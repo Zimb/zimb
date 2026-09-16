@@ -1,0 +1,19 @@
+module.exports = {
+  root: true,
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    ecmaVersion: 2022,
+    sourceType: 'module',
+  },
+  plugins: ['@typescript-eslint'],
+  extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended'],
+  ignorePatterns: [
+    'node_modules',
+    'packages/*/dist',
+    'packages/*/out',
+    'packages/*/build',
+    'packages/*/.wrangler',
+    'packages/*/.astro',
+    'packages/*/node_modules',
+  ],
+};

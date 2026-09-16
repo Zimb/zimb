@@ -1,0 +1,29 @@
+# Zimb — CODEOWNERS
+# Each line is a file pattern followed by one or more owners.
+# PRs touching these paths auto-request review from the listed owners.
+
+# ── Default ─────────────────────────────────────────────────────
+*                                    @zimb/founders
+
+# ── Worker (api.zimb.app) ───────────────────────────────────────
+/packages/worker/                    @zimb/backend-team
+/packages/worker/src/adapters/       @zimb/backend-team
+/packages/worker/wrangler.toml       @zimb/devops-team
+
+# ── App Web (Flutter) ───────────────────────────────────────────
+/packages/app-web/                   @zimb/flutter-team
+/packages/app-web/lib/widgets/       @zimb/flutter-team
+/packages/app-web/lib/theme/         @zimb/design-team
+
+# ── Extension VS Code ───────────────────────────────────────────
+/packages/extension/                 @zimb/extension-team
+
+# ── Landing (zimb.app) ──────────────────────────────────────────
+/packages/landing/src/components/    @zimb/design-team
+/packages/landing/src/layouts/       @zimb/design-team
+
+# ── Documentation & specs ───────────────────────────────────────
+/SPECIFICATIONS.md                   @zimb/founders
+/CDC.md                              @zimb/founders
+/recettes/                           @zimb/qa-team
+/.github/agents/                     @zimb/devops-team

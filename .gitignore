@@ -1,0 +1,86 @@
+# ─── Node ──────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ─── Build outputs ─────────────────────────────────────────────────
+dist/
+build/
+.next/
+out/
+.vercel/
+.turbo/
+*.tsbuildinfo
+
+# ─── Environment files (NEVER commit) ──────────────────────────────
+.env
+.env.local
+.env.*.local
+.dev.vars
+.dev.vars.local
+!.env.example
+!.env.sample
+
+# ─── Secrets & credentials ─────────────────────────────────────────
+*.pem
+*.key
+*.p12
+secrets/
+wrangler.toml.bak
+
+# ─── Cloudflare Worker ─────────────────────────────────────────────
+.wrangler/
+.dev/
+.miniflare/
+.cloudflare/
+
+# ─── Flutter / Dart ────────────────────────────────────────────────
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+**/generated_plugin_registrant.*
+*.iml
+*.ipr
+*.iws
+
+# ─── VS Code / IDEs ────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── OS ────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Logs & coverage ───────────────────────────────────────────────
+logs/
+*.log
+coverage/
+.nyc_output/
+
+# ─── Tests ─────────────────────────────────────────────────────────
+playwright-report/
+test-results/
+.k6/
+artifacts/
+
+# ─── Misc ──────────────────────────────────────────────────────────
+.cache/
+.temp/
+*.tgz
+.history/

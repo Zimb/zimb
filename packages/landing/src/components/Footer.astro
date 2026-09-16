@@ -1,0 +1,70 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer>
+  <div class="container">
+    <div class="cols">
+      <div>
+        <strong>Zimb</strong>
+        <p>Plateforme de bounty debugging pour Vibe Coders et seniors.</p>
+      </div>
+      <div>
+        <h4>Produit</h4>
+        <a href="/submit">Soumettre un ticket</a>
+        <a href="/track">Suivre un ticket</a>
+        <a href="/seniors/apply">Devenir senior</a>
+      </div>
+      <div>
+        <h4>Légal</h4>
+        <a href="/cgu">CGU</a>
+        <a href="/cgv">CGV</a>
+        <a href="/privacy">Politique de confidentialité</a>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <a href="mailto:contact@zimb.app">contact@zimb.app</a>
+        <a href="https://github.com/zimb-app" rel="noopener noreferrer">GitHub</a>
+      </div>
+    </div>
+    <div class="bottom">© {year} Zimb — Tous droits réservés.</div>
+  </div>
+</footer>
+
+<style>
+  footer {
+    padding: 48px 0 24px;
+    background: var(--color-text);
+    color: var(--color-bg);
+    font-size: 0.875rem;
+  }
+
+  .cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 32px;
+    margin-bottom: 32px;
+  }
+
+  h4 {
+    color: white;
+    margin-bottom: 12px;
+  }
+
+  a {
+    display: block;
+    color: var(--color-slate-300, #cbd5e1);
+    margin-bottom: 8px;
+  }
+
+  a:hover {
+    color: white;
+  }
+
+  .bottom {
+    border-top: 1px solid #334155;
+    padding-top: 16px;
+    text-align: center;
+    color: var(--color-text-muted);
+  }
+</style>

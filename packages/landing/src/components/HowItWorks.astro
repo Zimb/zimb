@@ -1,0 +1,89 @@
+---
+// 3-step "comment ça marche" section
+const steps = [
+  {
+    n: 1,
+    icon: '📝',
+    title: 'Décris ton bug',
+    desc: 'Titre, description, dépôt GitHub, bounty. 30 secondes chrono.',
+  },
+  {
+    n: 2,
+    icon: '🎯',
+    title: 'Un senior claim',
+    desc: 'Notification push à tous les seniors. Le premier claim réserve le ticket pour 45 minutes.',
+  },
+  {
+    n: 3,
+    icon: '💸',
+    title: 'Tu valides, on paye',
+    desc: 'Clique Quick Win ! quand c\'est résolu. Senior payé 80 %, Zimb 20 %. Pas résolu ? Remboursé.',
+  },
+];
+---
+
+<section class="how">
+  <div class="container">
+    <h2>Comment ça marche</h2>
+    <div class="grid">
+      {steps.map((s) => (
+        <article class="step">
+          <div class="num">{s.n}</div>
+          <div class="icon">{s.icon}</div>
+          <h3>{s.title}</h3>
+          <p>{s.desc}</p>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .how {
+    padding: 80px 0;
+    background: var(--color-surface);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 32px;
+  }
+
+  .step {
+    position: relative;
+    padding: 32px 24px;
+    background: var(--color-bg);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  .num {
+    position: absolute;
+    top: -16px;
+    left: 24px;
+    width: 32px;
+    height: 32px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+
+  .icon {
+    font-size: 2.5rem;
+    margin-bottom: 16px;
+  }
+
+  .step h3 {
+    font-size: 1.25rem;
+  }
+
+  .step p {
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+</style>

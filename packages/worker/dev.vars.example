@@ -1,0 +1,24 @@
+# Local development secrets — copy to .dev.vars (gitignored)
+# Run: cp .dev.vars.example .dev.vars
+
+ENVIRONMENT = "development"
+LOG_LEVEL = "debug"
+
+# Stripe (use test mode keys)
+STRIPE_SECRET_KEY = "sk_test_..."
+STRIPE_WEBHOOK_SECRET = "whsec_test_..."
+
+# Airtable
+AIRTABLE_API_KEY = "pat_..."
+AIRTABLE_BASE_ID = "app..."
+
+# GitHub App
+GITHUB_APP_ID = "123456"
+GITHUB_PRIVATE_KEY = "<paste RSA private key here>"
+GITHUB_WEBHOOK_SECRET = "zimb-webhook-secret-dev"
+
+# JWT
+JWT_SECRET = "dev-jwt-secret-min-32-chars-change-me"
+
+# Resend
+RESEND_API_KEY = "re_..."

@@ -1,0 +1,73 @@
+---
+// Hero section — main pitch
+---
+
+<section class="hero">
+  <div class="container">
+    <h1>Débogue ton vibe code<br />en <span class="hl">45 minutes</span>.</h1>
+    <p class="lead">
+      Tu es bloqué sur un bug que Cursor, Copilot ou Cline ne résolvent pas&nbsp;?
+      Soumets-le en 30 secondes. Un senior claim, résout, et tu valides. Paiement sécurisé via Stripe.
+    </p>
+    <div class="cta-row">
+      <a href="/submit" class="btn btn-primary">Soumettre un bug</a>
+      <a href="#seniors" class="btn btn-secondary">Je suis senior →</a>
+    </div>
+    <div class="trust">
+      <span>🔒 Paiement sécurisé</span>
+      <span>⚡ Réponse en &lt;45 min</span>
+      <span>💸 Remboursé si non résolu</span>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    padding: 80px 0 60px;
+    text-align: center;
+    background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-bg) 100%);
+  }
+
+  .hl {
+    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-urgent-critical) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .lead {
+    font-size: 1.25rem;
+    color: var(--color-text-muted);
+    max-width: 720px;
+    margin: 24px auto 32px;
+  }
+
+  .cta-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+  }
+
+  .btn-primary {
+    background: var(--color-primary);
+    color: white;
+    box-shadow: var(--shadow-card);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--color-primary);
+    border: 2px solid var(--color-primary);
+  }
+
+  .trust {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    flex-wrap: wrap;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+</style>

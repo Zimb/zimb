@@ -1,0 +1,71 @@
+# ──────────────────────────────────────────────────────────────────
+# Cloudflare Worker config for api.zimb.app
+# ──────────────────────────────────────────────────────────────────
+name = "zimb-api"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# Production
+[env.production]
+name = "zimb-api"
+routes = [
+  { pattern = "api.zimb.app/*", custom_domain = true }
+]
+vars = { ENVIRONMENT = "production", LOG_LEVEL = "info" }
+
+# Staging
+[env.staging]
+name = "zimb-api-staging"
+routes = [
+  { pattern = "api-staging.zimb.app/*", custom_domain = true }
+]
+vars = { ENVIRONMENT = "staging", LOG_LEVEL = "debug" }
+
+# Secrets to set via `wrangler secret put <NAME>`:
+#   STRIPE_SECRET_KEY
+#   STRIPE_WEBHOOK_SECRET
+#   AIRTABLE_API_KEY
+#   AIRTABLE_BASE_ID
+#   GITHUB_APP_ID
+#   GITHUB_PRIVATE_KEY
+#   GITHUB_WEBHOOK_SECRET
+#   JWT_SECRET
+#   RESEND_API_KEY
+
+# Durable Objects for Kanban realtime sessions + offline buffer
+[[durable_objects.bindings]]
+name = "KANBAN_SESSION"
+class_name = "KanbanSession"
+
+[[durable_objects.bindings]]
+name = "OFFLINE_BUFFER"
+class_name = "OfflineBuffer"
+
+# Migrations for Durable Objects (run on first deploy)
+[[migrations]]
+tag = "v1"
+new_classes = ["KanbanSession", "OfflineBuffer"]
+
+# KV for idempotency keys + rate limiting
+[[kv_namespaces]]
+binding = "IDEMPOTENCY_KV"
+id = "REPLACE_WITH_KV_ID"
+preview_id = "REPLACE_WITH_PREVIEW_KV_ID"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "REPLACE_WITH_KV_ID"
+preview_id = "REPLACE_WITH_PREVIEW_KV_ID"
+
+# Cron triggers
+[triggers]
+crons = [
+  "*/1 * * * *",    # every minute — timer expiry
+  "0 * * * *",      # every hour   — auto-validate 24h
+  "*/30 * * * *"    # every 30 min — SLA escalation
+]
+
+# Limits
+[limits]
+cpu_ms = 50

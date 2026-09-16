@@ -1,0 +1,115 @@
+{
+  "name": "zimb-vscode",
+  "displayName": "Zimb — Debug Bounty",
+  "description": "Submit a debug ticket from VS Code in one command. Get unblocked in 45 minutes.",
+  "version": "0.1.0",
+  "private": true,
+  "publisher": "zimb",
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.94.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "zimb",
+    "debug",
+    "bounty",
+    "copilot",
+    "ai"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onChatParticipant:zimb",
+    "onCommand:zimb.openForm",
+    "onCommand:zimb.login",
+    "onCommand:zimb.logout"
+  ],
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "zimb",
+        "name": "zimb",
+        "description": "Submit a debug bounty to the Zimb senior pool",
+        "icon": "assets/zimb.png",
+        "commands": [
+          {
+            "name": "submit",
+            "description": "Open the ticket submission form"
+          },
+          {
+            "name": "status",
+            "description": "Check the status of a ticket"
+          }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "zimb.openForm",
+        "title": "Zimb: Submit a debug ticket",
+        "category": "Zimb"
+      },
+      {
+        "command": "zimb.login",
+        "title": "Zimb: Login with GitHub",
+        "category": "Zimb"
+      },
+      {
+        "command": "zimb.logout",
+        "title": "Zimb: Logout",
+        "category": "Zimb"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "zimb.openForm",
+          "when": "true"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Zimb",
+      "properties": {
+        "zimb.api.baseUrl": {
+          "type": "string",
+          "default": "https://api.zimb.app",
+          "description": "Zimb API base URL"
+        },
+        "zimb.bounty.defaultAmount": {
+          "type": "number",
+          "default": 30,
+          "minimum": 10,
+          "maximum": 500,
+          "description": "Default bounty in EUR when opening the form"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p ./ && esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --target=node20",
+    "dev": "npm run build && npm run watch",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext .ts",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "package": "vsce package",
+    "publish": "vsce publish",
+    "clean": "rm -rf out .vsix"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "@types/vscode": "^1.94.0",
+    "@typescript-eslint/eslint-plugin": "^8.8.0",
+    "@typescript-eslint/parser": "^8.8.0",
+    "esbuild": "^0.24.0",
+    "eslint": "^8.57.1",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.1",
+    "@vscode/vsce": "^2.32.0"
+  }
+}
