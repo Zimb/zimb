@@ -41,20 +41,9 @@ claims.post('/', async (c) => {
     return c.json({ ok: false, error: { code: 'not_found', message: 'Ticket not found' } }, 404);
   }
 
-  if (ticket.status !== 'open') {
-    return c.json(
-      {
-        ok: false,
-        error: {
-          code: 'invalid_state',
-          message: `Ticket must be 'open' to be claimed, currently '${ticket.status}'`,
-        },
-      },
-      409
-    );
-  }
-
-  // ── Step 2: check for existing active claim ──────────────────
+  // ── Step 2: check for existing active claim FIRST ───────────
+  // (this must come before the status check so anti-replay CT-LOCK-05
+  // and concurrent claim CT-LOCK-02 return the proper error codes.)
   const existingClaim = await getActiveClaim(c.env, ticketId);
   if (existingClaim) {
     if (existingClaim.seniorId === seniorId) {
@@ -80,6 +69,20 @@ claims.post('/', async (c) => {
           message: `Ticket already claimed by another senior until ${existingClaim.expiresAt}`,
           claimedBy: existingClaim.seniorId,
           claimExpiresAt: existingClaim.expiresAt,
+        },
+      },
+      409
+    );
+  }
+
+  // ── Step 3: now check ticket status (must be open) ──────────
+  if (ticket.status !== 'open') {
+    return c.json(
+      {
+        ok: false,
+        error: {
+          code: 'invalid_state',
+          message: `Ticket must be 'open' to be claimed, currently '${ticket.status}'`,
         },
       },
       409

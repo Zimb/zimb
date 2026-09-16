@@ -17,7 +17,7 @@ import {
 } from '../adapters/airtable';
 
 /**
- * Job: expire-claims (every 1 min, "*/1 * * * *")
+ * Job: expire-claims (cron: every 1 minute)
  *
  * - Finds active claims whose expires_at < now()
  * - Marks them as 'expired'

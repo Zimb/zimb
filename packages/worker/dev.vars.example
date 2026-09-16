@@ -4,21 +4,24 @@
 ENVIRONMENT = "development"
 LOG_LEVEL = "debug"
 
-# Stripe (use test mode keys)
+# Stripe (use test mode keys) — M4
 STRIPE_SECRET_KEY = "sk_test_..."
 STRIPE_WEBHOOK_SECRET = "whsec_test_..."
 
-# Airtable
-AIRTABLE_API_KEY = "pat_..."
-AIRTABLE_BASE_ID = "app..."
+# Airtable — M1+M2 mandatory
+# Generate at https://airtable.com/account → Developer hub → Create token
+# Scopes: data.records:read, data.records:write, schema.bases:read
+# Access: ONLY your Zimb Sandbox base (not "all bases")
+AIRTABLE_API_KEY = 
+AIRTABLE_BASE_ID = 
 
-# GitHub App
+# GitHub App — M3
 GITHUB_APP_ID = "123456"
 GITHUB_PRIVATE_KEY = "<paste RSA private key here>"
 GITHUB_WEBHOOK_SECRET = "zimb-webhook-secret-dev"
 
-# JWT
+# JWT — M3
 JWT_SECRET = "dev-jwt-secret-min-32-chars-change-me"
 
-# Resend
+# Resend (transactional emails) — M3/M5
 RESEND_API_KEY = "re_..."
