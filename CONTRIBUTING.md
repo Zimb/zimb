@@ -18,6 +18,8 @@ Zimb is an open-source **beta** project. Contributions are voluntary and unpaid 
 7. [How to make a PR](#-how-to-make-a-pr)
 8. [Coding rules](#-coding-rules)
 9. [Troubleshooting](#-troubleshooting)
+10. [💰 Bounties & payment](#-bounties--payment)
+11. [💬 Communication](#-communication)
 
 ---
 
@@ -230,7 +232,54 @@ See [`SPECIFICATIONS.md`](./SPECIFICATIONS.md) for the full technical reference.
 
 ---
 
-## 🐛 Troubleshooting
+## � Bounties & payment
+
+> **TL;DR — there is no automatic bounty payment for unsolicited PRs.**
+
+### How Zimb bounties work (when they exist)
+
+A bounty is **a structured GitHub issue** with:
+
+- The `bounty` label
+- A monetary amount in the body front-matter (`bounty: 50 EUR`)
+- A pre-authorized payment held in escrow (Stripe `PaymentIntent` with `capture_method: manual`)
+- A 7-day expiry
+
+When a senior comments `@zimb-bot claim` on such an issue:
+
+1. The bot creates a private repo `zimb-<ticketId>`
+2. Invites the senior with `push` permission
+3. Captures the payment only when the PR merges and is approved
+
+### What this means for you
+
+| Scenario | Will you be paid? |
+|---|---|
+| **You fix a bounty-tagged issue** (label `bounty`) | ✅ **Yes**, after PR merge + capture |
+| **You open an unsolicited PR** (no prior bounty, no `bounty` label on the linked issue) | ❌ **No automatic payment** |
+| **You add docs / translations / tests unsolicited** | ❌ **No automatic payment**, but you'll be credited in the README contributors list |
+
+### Why this policy?
+
+- The bounty system only works when there's a **pre-authorized payment in escrow** — without that, anyone can claim "you owe me €X" and we'd have no record of agreement.
+- Unsolicited contributions are appreciated and will be credited, but they don't trigger payment because no contract was set up.
+- This protects both you (no surprise payment demands) and the project (no bounty farming exploits).
+
+### Want to get paid for a fix?
+
+1. **Look for issues labelled `bounty`** — those are the ones with real money behind them.
+2. **If you see a bug that deserves a bounty**, open an issue describing it, then ping `@zimb-bot bounty` to request an official bounty (the founder reviews and approves).
+3. **Don't put wallet addresses in your PR body or description** — payments go through the formal Stripe escrow flow, not direct transfers.
+
+### Current status
+
+> 🟡 **The bounty payment backend (Stripe Connect) is not yet deployed.** Bounty labels may exist on some issues, but no payment is currently escrowed. Until the backend goes live, **no bounty is enforceable** — merge decisions are at the founder's discretion.
+
+Thanks for understanding 🙏
+
+---
+
+## �🐛 Troubleshooting
 
 | Problem | Fix |
 |---|---|
