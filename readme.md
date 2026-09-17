@@ -2,14 +2,38 @@
 
 > **Plateforme de bounty debugging reliant les *Vibe Coders* (juniors boostés à l'IA) à des seniors capables de débloquer les bugs typiques causés par l'IA.**
 
-## 🌐 Sous-domaines
+---
 
-| URL | Rôle | Stack |
+## ⚡ Try it in 30 seconds
+
+**The fastest path to a working `@zimb` in VS Code.** No clone, no build, no Node.js.
+
+```bash
+# One command — assumes you have VS Code 1.94+ with `code` on your PATH
+code --install-extension https://github.com/Zimb/zimb/releases/download/v0.1.0/zimb-vscode-0.1.0.vsix --force
+```
+
+Then in VS Code:
+
+1. **Reload the window** — `Ctrl/Cmd + Shift + P` → "Developer: Reload Window"
+2. **Open a folder** that's a git clone of a GitHub repo you own (any repo works)
+3. **Open Copilot Chat** — `Ctrl/Cmd + Shift + I`
+4. **Type:** `@zimb /bounties` — you should see existing bounties (or an empty list)
+
+That's it. The sidebar Zimb icon (left activity bar) shows your bounties + a persistent notifications badge.
+
+> **No GitHub OAuth?** The extension prompts you to sign in when you first use a command that needs it (`/post`, `/status`).
+
+---
+
+## 🌐 Subdomains
+
+| URL | Role | Stack |
 |---|---|---|
-| [zimb.app](https://zimb.app) | Landing marketing + recrutement seniors | Astro (static) |
-| [app.zimb.app](https://app.zimb.app) | Kanban seniors (post-it, Lock & Timer) | Flutter Web |
-| [api.zimb.app](https://api.zimb.app) | Middleware d'orchestration | Cloudflare Worker (Hono) |
-| _(marketplace)_ | Extension VS Code / Copilot `@zimb` | TypeScript |
+| [zimb.app](https://zimb.app) | Marketing landing + senior recruitment | Astro (static) |
+| [app.zimb.app](https://app.zimb.app) | Senior Kanban (post-it, Lock & Timer) | Flutter Web |
+| [api.zimb.app](https://api.zimb.app) | Orchestration middleware | Cloudflare Worker (Hono) |
+| [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=zimb.zimb-vscode) | `@zimb` chat participant | TypeScript |
 
 ## 📦 Monorepo
 
@@ -29,31 +53,85 @@ zimb/
     └── workflows/    # CI GitHub Actions
 ```
 
-## 🚀 Quick start
+## 🚀 Try it (1 minute, no clone)
+
+See [⚡ Try it in 30 seconds](#-try-it-in-30-seconds) above.
+
+If you want to **compose a bounty** (not just look at them), the flow is:
+
+1. `@zimb /redact <your problem in plain English or French> [-l en] [-u high] [-b 50]`
+   → see a structured preview, nothing posted yet
+2. `@zimb /post`
+   → publishes the preview to GitHub on your current repo
+
+Try it on a throwaway repo first.
+
+---
+
+## 🛠 Dev setup (for contributors)
+
+**Only needed if you want to modify the extension or the Worker.**
+
+### Prerequisites
+
+- Node.js 20+ (`nvm use 20` if you use nvm)
+- npm 10+
+- Git
+- VS Code 1.94+ (for extension development)
+- A GitHub account with a repo you can push to
+
+### Clone and build
 
 ```bash
-# 1. Cloner
-git clone https://github.com/zimb-app/zimb.git
+gh repo clone Zimb/zimb
 cd zimb
+npm install                # monorepo root
+npx turbo run build        # build every package
+```
 
-# 2. Installer Node 20+
-nvm use
+### Run each package in dev mode
 
-# 3. Installer les dépendances du monorepo
-npm install
-
-# 4. Copier les secrets de dev
-cp packages/worker/dev.vars.example packages/worker/.dev.vars
-# → remplir les clés Stripe test, Airtable PAT, GitHub App private key
-
-# 5. Lancer un package en dev
+```bash
 npm run dev -w @zimb/worker      # api.zimb.app → http://localhost:8787
 npm run dev -w @zimb/landing     # zimb.app → http://localhost:5173
-# Pour Flutter Web :
+
+# Extension:
+code packages/extension          # opens in a new VS Code window, press F5 to launch the Extension Dev Host
+
+# Flutter Web Kanban:
 cd packages/app-web && flutter pub get && flutter run -d chrome
-# Pour extension VS Code :
-code packages/extension && # press F5
 ```
+
+### Dev secrets
+
+The Worker needs API keys to talk to Stripe / Airtable / GitHub. For local dev:
+
+```bash
+cp packages/worker/dev.vars.example packages/worker/.dev.vars
+# Edit and fill in:
+#   STRIPE_SECRET_KEY (test mode)
+#   AIRTABLE_API_KEY
+#   GITHUB_APP_ID + GITHUB_PRIVATE_KEY
+#   JWT_SECRET
+```
+
+The extension uses VS Code's built-in GitHub authentication — no secrets needed in dev.
+
+---
+
+## 🧪 Test the `@zimb` chat commands
+
+Once installed, try each slash command. See [docs/CHAT_COMMANDS.md](docs/CHAT_COMMANDS.md) for the full reference.
+
+| Command | What it does |
+|---|---|
+| `@zimb /bounties` | List bounties in the current repo (read-only) |
+| `@zimb /redact <bug>` | Compose a draft locally, no network call |
+| `@zimb /fix <hint>` | Compose using your chat history as troubleshooting context |
+| `@zimb /post` | Publish the last draft to GitHub |
+| `@zimb /discard` | Throw away the current draft |
+| `@zimb /status T-XXXX` | Check a ticket via api.zimb.app |
+| `@zimb /notif` | Show the notifications poller status |
 
 ## 🤖 Agents Copilot spécialisés
 
