@@ -24,6 +24,8 @@ import * as vscode from 'vscode';
 import type { GitHubAuthService } from '../auth/github';
 import type { LanguageDetector } from './languageDetector';
 import type { RepoDetector } from './repoDetector';
+import { renderBountyBody } from '../chat/bountyRenderer';
+import type { StructuredIssue } from '../chat/issueBuilder.types';
 
 export interface CreateIssueInput {
   /** Raw chat transcript after the `@zimb` invocation. */
@@ -39,6 +41,13 @@ export interface CreateIssueInput {
    * the extension uses the first line of `chatPrompt`.
    */
   titleOverride?: string;
+  /**
+   * Optional LLM-composed structured issue. If provided, the renderer uses
+   * its fields (problem / repro / scope / constraints / acceptance / …)
+   * to build a rich bounty body that matches `99-bounty-body-template.md`.
+   * Otherwise the body is built from the raw `chatPrompt` (legacy path).
+   */
+  structured?: StructuredIssue;
   /**
    * Override the target repo (e.g. `<owner>/<name>`). If omitted, the
    * extension falls back to the current workspace's git remote.
@@ -189,6 +198,17 @@ export class IssueCreator {
     ctx: IssueContext,
     target: { owner: string; repo: string }
   ): string {
+    // Prefer the LLM-composed structured issue when available.
+    if (input.structured) {
+      return renderBountyBody(input.structured, {
+        owner: target.owner,
+        repo: target.repo,
+        languages: ctx.languages,
+        bountyOverride: input.bounty ?? null,
+      });
+    }
+
+    // Legacy path: render from raw chatPrompt only (no LLM).
     const sections: string[] = [];
     sections.push(`## 🎯 Problem\n\n${input.chatPrompt.trim()}\n`);
 

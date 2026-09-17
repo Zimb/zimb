@@ -2,56 +2,61 @@
  * issueBuilder.ts — LLM-powered GitHub Issue composer.
  *
  * Asks the user's active Copilot chat model to turn a free-form chat prompt
- * into a structured GitHub Issue (title + body + suggested bounty).
+ * into a STRUCTURED ticket ready to render through bountyRenderer.ts.
  *
- * Falls back to a deterministic title extraction + template body if no model
- * is available, so the extension still works without Copilot.
- *
- * Schema (JSON returned by the LLM):
- *   {
- *     "title":    string (max 80 chars, no prefix),
- *     "body":     Markdown body with sections 🎯 / 🔬 / 🎯 / 📋,
- *     "bounty":   number (EUR, 10-100),
- *     "kind":     "bug" | "feature" | "proposal" | "chore"
- *   }
+ * Pure logic (parser + fallback) lives in `issueBuilder.types.ts` so it can
+ * be unit-tested without the `vscode` runtime.
  */
 import * as vscode from 'vscode';
+import {
+  type StructuredIssue,
+  parseStructuredIssue,
+  composeIssueFallback,
+} from './issueBuilder.types';
 
-export interface ComposedIssue {
-  title: string;
-  body: string;
-  bounty: number;
-  kind: 'bug' | 'feature' | 'proposal' | 'chore';
-}
+// Re-export for backward-compat
+export { parseStructuredIssue, composeIssueFallback };
+export type { StructuredIssue };
 
-const SYSTEM_PROMPT = `You are Zimb's ticket composer. You turn raw user notes into a structured GitHub Issue body in Markdown.
+const SYSTEM_PROMPT = `You are Zimb's ticket composer. You turn raw user notes into a structured GitHub Issue that a senior developer can understand AND resolve in under 15 minutes.
 
-Rules:
-- Output STRICT JSON, no commentary, no fences.
-- Detect the kind: "bug" (something broken), "feature" (new capability), "proposal" (improve existing), "chore" (cleanup/docs).
-- title: ≤ 80 chars, no emoji prefix, plain sentence form.
-- body sections (use them in this order, skip empty ones):
-    ## 🎯 Problem
-    ## 🔬 Reproduction steps
-    ## 🎯 Expected vs Actual
-    ## 📋 Scope
-    ## ✅ Acceptance criteria
-- Scope lists files/components that are in-scope (bullets, ≤5).
-- Acceptance criteria are checkboxes, 3-5 items.
+# Hard rules
+
+- Output STRICT JSON. No prose, no markdown fences, no commentary.
+- Detect the kind: "bug" (something broken), "feature" (new capability), "proposal" (improve existing), "chore" (cleanup / docs).
+- title: ≤ 80 chars, plain sentence form, no emoji, no prefix like "[Bug]".
+
+# Reasoning step (do this internally, do not output)
+
+Before writing the JSON, think about:
+1. What is the smallest **reproducible** unit? (a route, a button, a config flag, a script)
+2. What **environment** is the user in? (org vs user account, OS, browser, package version, role/permission)
+3. What **constraints** does the user mention? (e.g. "must work at org level, not just user level" → constraint)
+4. What **hypotheses** has the user ALREADY ruled out? (don't waste senior's time re-trying them)
+
+# Field guidelines
+
+- summary: 1 sentence, < 140 chars. The "elevator pitch" a senior reads in 5 seconds.
+- problem: 1-3 sentences describing the real-world impact. Why does this matter?
+- repro: numbered steps, each one actionable. Use imperative form ("click X", "run Y"). 3-7 steps max.
+- expected: what should happen (post-fix). One sentence.
+- actual: what currently happens (pre-fix). One sentence, include any error message verbatim.
+- scope: bullets naming the files / components in scope. ≤5. If you don't know, say "unknown".
+- constraints: bullets capturing org-vs-user, RBAC, OS, browser, versions, etc. Empty array if none.
+- acceptance: checkboxes. Each MUST be testable. 3-5 items. Start each with "- [ ] ".
+- evidence: bullets with verbatim logs / stack traces / error messages. Empty if none.
 - bounty (EUR): 10 for chore/docs, 30 for bug/feature/proposal, up to 100 for security/perf.
+- urgency: critical (data loss / outage) > high (blocked) > medium (workaround exists) > low (cosmetic).
 
-Return ONLY this JSON:
-{"title":"...","body":"...","bounty":30,"kind":"bug"}`;
+# Output JSON shape (copy exactly)
+
+{"title":"...","kind":"bug","summary":"...","problem":"...","repro":["1. ...","2. ..."],"expected":"...","actual":"...","scope":["..."],"constraints":["..."],"acceptance":["- [ ] ...","- [ ] ..."],"evidence":["..."],"bounty":30,"urgency":"medium"}`;
 
 /**
  * Try to use the active Copilot chat model. Returns null if no model available.
  */
-export async function composeIssueFromPrompt(rawPrompt: string): Promise<ComposedIssue | null> {
-  if (!rawPrompt.trim()) return null;
-
-  // The chat model is provided per-request on `request.model`.
-  // We expose a separate entry point that the participant calls with that handle.
-  return null; // implemented in `composeIssueViaModel` below
+export async function composeIssueFromPrompt(_rawPrompt: string): Promise<StructuredIssue | null> {
+  return null; // delegate to `composeIssueViaModel`
 }
 
 /**
@@ -62,7 +67,7 @@ export async function composeIssueViaModel(
   model: vscode.LanguageModelChat,
   rawPrompt: string,
   extraContext?: { selectedText?: string }
-): Promise<ComposedIssue | null> {
+): Promise<StructuredIssue | null> {
   const userParts = [`User note:\n"""\n${rawPrompt.trim()}\n"""`];
   if (extraContext?.selectedText) {
     userParts.push(`\nCode/selection excerpt (first 600 chars):\n"""\n${extraContext.selectedText.slice(0, 600)}\n"""`);
@@ -84,66 +89,5 @@ export async function composeIssueViaModel(
     return null;
   }
 
-  return parseComposedIssue(rawText);
-}
-
-/**
- * Parse the LLM response into a structured ComposedIssue.
- * Robust to common LLM mistakes (code fences, leading prose).
- */
-export function parseComposedIssue(raw: string): ComposedIssue | null {
-  let json = raw.trim();
-  // Strip ```json fences if present
-  const fenceMatch = /```(?:json)?\s*([\s\S]*?)```/i.exec(json);
-  if (fenceMatch && fenceMatch[1]) {
-    json = fenceMatch[1].trim();
-  }
-  // Find first {...} block if there's preamble
-  const braceStart = json.indexOf('{');
-  const braceEnd = json.lastIndexOf('}');
-  if (braceStart === -1 || braceEnd === -1 || braceEnd <= braceStart) return null;
-  json = json.slice(braceStart, braceEnd + 1);
-
-  try {
-    const obj = JSON.parse(json) as Partial<ComposedIssue>;
-    const title = typeof obj.title === 'string' ? obj.title.trim() : '';
-    const body = typeof obj.body === 'string' ? obj.body.trim() : '';
-    const bounty =
-      typeof obj.bounty === 'number' && obj.bounty >= 10 && obj.bounty <= 100
-        ? obj.bounty
-        : 30;
-    const kind: ComposedIssue['kind'] =
-      obj.kind === 'feature' || obj.kind === 'proposal' || obj.kind === 'chore'
-        ? obj.kind
-        : 'bug';
-
-    if (!title || title.length > 100) return null;
-    if (!body || body.length < 40) return null;
-    return { title, body, bounty, kind };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Deterministic fallback if no LLM is available: extract title from first line,
- * wrap the prompt into a minimal body.
- */
-export function composeIssueFallback(rawPrompt: string): ComposedIssue {
-  const firstLine = rawPrompt.split(/\r?\n/)[0]?.trim() ?? '';
-  const title = firstLine.length > 0 ? firstLine.slice(0, 80) : 'Debug bounty from VS Code';
-  const kind: ComposedIssue['kind'] = /\b(bug|broken|crash|error|fail|exception)\b/i.test(rawPrompt)
-    ? 'bug'
-    : 'feature';
-  return {
-    title,
-    body:
-      `## 🎯 Problem\n\n${rawPrompt.trim()}\n\n` +
-      `## 🔬 Reproduction steps\n\n_To be filled by requester._\n\n` +
-      `## 🎯 Expected vs Actual\n\n_To be filled by requester._\n\n` +
-      `## 📋 Scope\n\n_Auto-detected from context._\n\n` +
-      `## ✅ Acceptance criteria\n\n- [ ] _To be filled._\n`,
-    bounty: kind === 'bug' ? 30 : 20,
-    kind,
-  };
+  return parseStructuredIssue(rawText);
 }

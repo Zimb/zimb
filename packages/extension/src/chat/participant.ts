@@ -5,7 +5,8 @@ import type { RepoDetector } from '../services/repoDetector';
 import type { IssueCreator } from '../services/issueCreator';
 import { notifyNewIssue } from '../commands/issueNotifier';
 import type { BountiesProvider, BountyIssue, BountyStatus } from '../bountiesProvider';
-import { composeIssueViaModel, composeIssueFallback, type ComposedIssue } from './issueBuilder';
+import { composeIssueViaModel, composeIssueFallback } from './issueBuilder';
+import type { StructuredIssue } from './issueBuilder.types';
 
 /**
  * Registers the `@zimb` chat participant.
@@ -96,27 +97,32 @@ export function registerChatParticipant(
 
       // ── Compose via LLM (Copilot chat model) with a deterministic fallback ──
       stream.progress('Composing structured ticket via Copilot…');
-      let composed: ComposedIssue | null = null;
+      let composed: StructuredIssue = composeIssueFallback(prompt);
+      let usedFallback = true;
       if (request.model && Array.isArray((request.model as { family?: unknown }).family)) {
         try {
-          composed = await composeIssueViaModel(request.model, prompt, { ...(selectedText ? { selectedText } : {}) });
+          const llm = await composeIssueViaModel(request.model, prompt, { ...(selectedText ? { selectedText } : {}) });
+          if (llm) {
+            composed = llm;
+            usedFallback = false;
+          }
         } catch {
-          composed = null;
+          // fall through to deterministic fallback
         }
       }
-      if (!composed) {
-        composed = composeIssueFallback(prompt);
+      if (usedFallback) {
         stream.markdown('_(No Copilot model available — using fallback template.)_');
       } else {
-        stream.markdown(`✨ LLM composed: kind=**${composed.kind}**, suggested bounty **${composed.bounty}€**\n`);
+        stream.markdown(
+          `✨ LLM composed: kind=**${composed.kind}**, suggested bounty **${composed.bounty}€**, urgency **${composed.urgency}**\n`
+        );
       }
 
       stream.progress('Publishing bounty to GitHub…');
       try {
         const issue = await issueCreator.create({
-          chatPrompt: composed.body,
-          ...(composed.title ? { titleOverride: composed.title } : {}),
-          ...(typeof composed.bounty === 'number' ? { bounty: composed.bounty } : {}),
+          chatPrompt: prompt,
+          structured: composed,
           ...(selectedText ? { selectedText } : {}),
         });
         stream.markdown(
