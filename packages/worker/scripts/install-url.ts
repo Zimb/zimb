@@ -1,12 +1,12 @@
 /**
- * install-url.ts — Show the exact URL to install @zimb-bot on Zimb-app,
- * bypassing the broken "Install App" UI list.
+ * install-url.ts — Direct installation link for @zimb-bot on target organization.
  *
- * The proper URL is:
+ * Direct URL format:
  *   https://github.com/apps/<app-slug>/installations/new?target_id=<org-id>
  *
- * The `target_id` param forces the install dialog to focus on the org,
- * even if the org hasn't shown up in the dropdown yet.
+ * Prerequisites:
+ *   1. App installation access policy must be set to "Any account" (or transferred to the org).
+ *   2. The user must be an Organization Owner or GitHub App Manager on the target organization.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -50,10 +50,13 @@ console.log('  App ID :', APP_ID);
 console.log('  App slug:', APP_SLUG);
 console.log('  Org ID  :', ORG_ID);
 console.log('');
-console.log('  👉 Open this URL in your browser:');
+console.log('  Open this URL in your browser:');
 console.log('');
 console.log('     ' + installUrl);
 console.log('');
-console.log('  Then click "Install" (it should land directly on the Zimb-app');
-console.log('  install confirmation screen, bypassing the dropdown).');
+console.log('  Prerequisites:');
+console.log('  1. App setting: "Where can this GitHub App be installed?" must be set to "Any account"');
+console.log('     (or app ownership transferred to the target org).');
+console.log('  2. User role: The installing user must be an Organization Owner or GitHub App Manager.');
+console.log('  Documentation: docs/GITHUB_APP_ORG_INSTALLATION.md');
 console.log('');

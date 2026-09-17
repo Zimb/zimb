@@ -135,9 +135,11 @@ if (!instRes.ok) {
 
 // ── 3. Does Zimb-app org exist? ────────────────────────────────
 section(`3. Does org "${TARGET_ORG}" exist on GitHub?`);
+let targetOrgId: number | null = null;
 const orgRes = await ghFetch(`/orgs/${TARGET_ORG}`);
 if (orgRes.status === 200) {
   const org = await orgRes.json() as { login: string; id: number; type: string };
+  targetOrgId = org.id;
   ok(`${TARGET_ORG} exists`, `${org.type}, id=${org.id}`);
 } else if (orgRes.status === 404) {
   ko(`${TARGET_ORG} does NOT exist yet`, `create it at https://github.com/account/organizations/new (Free plan)`);
@@ -145,10 +147,7 @@ if (orgRes.status === 200) {
   ko(`GET /orgs/${TARGET_ORG} returned ${orgRes.status}`);
 }
 
-// ── 4. Are you a member of Zimb-app? ───────────────────────────
 section(`4. Are you (app owner) a member of ${TARGET_ORG}?`);
-// As the app, we can't directly check our owner's memberships,
-// but we can check via /user/installations if the App is on that org.
 const targetInstRes = await ghFetch(`/orgs/${TARGET_ORG}/installation`);
 if (targetInstRes.status === 200) {
   const ti = await targetInstRes.json() as { id: number; account: { login: string } };
@@ -159,29 +158,31 @@ if (targetInstRes.status === 200) {
   go(`/orgs/${TARGET_ORG}/installation returned ${targetInstRes.status}`);
 }
 
-// ── 5. Recommended next action ─────────────────────────────────
 section('5. What to do next');
 if (targetInstRes.status === 404) {
   console.log('');
-  console.log('  📍 Steps to install @zimb-bot on Zimb-app:');
+  console.log('  Steps to install @zimb-bot on Zimb-app:');
   console.log('');
-  console.log('  1. Create the org (if not done):');
+  console.log('  1. Ensure the organization exists and you are an Organization Owner or GitHub App Manager:');
   console.log('       https://github.com/account/organizations/new');
-  console.log('       Name: Zimb-app, Plan: Free');
+  console.log(`       Target Org: ${TARGET_ORG}`);
   console.log('');
-  console.log('  2. Go to the App page:');
+  console.log('  2. Configure App Installation Access Policy:');
   console.log('       https://github.com/settings/apps/4972133');
+  console.log('       Under General -> "Where can this GitHub App be installed?", select "Any account".');
+  console.log('       (Or under Advanced -> "Transfer ownership", transfer the app to the organization).');
   console.log('');
-  console.log('  3. In the LEFT MENU, click "Install App" (NOT "Edit"):');
+  console.log('  3. In the left menu, click "Install App":');
   console.log('       https://github.com/settings/apps/4972133/installations');
   console.log('');
-  console.log('  4. You should see two buttons:');
-  console.log('       - "Install on your account Zimb" (already done if installation # exists above)');
-  console.log('       - "Install on organization Zimb-app"  ← CLICK THIS');
+  console.log(`  4. Click "Install" next to organization "${TARGET_ORG}".`);
+  if (targetOrgId) {
+    console.log('       Direct URL:');
+    console.log(`       https://github.com/apps/zimb-bot/installations/new?target_id=${targetOrgId}`);
+  }
   console.log('');
-  console.log('  5. On the next screen, pick "All repositories" → Install.');
-  console.log('');
-  console.log('  If "Zimb-app" does NOT appear in step 4, the org was not created.');
+  console.log('  5. Select repository permissions and complete installation.');
+  console.log('       Guide: docs/GITHUB_APP_ORG_INSTALLATION.md');
 }
 
 console.log('');

@@ -84,18 +84,30 @@ code --install-extension zimb-vscode-0.1.0.vsix --force
 ## 🤖 Install the @zimb-bot GitHub App
 
 **Prerequisites:**
-- A GitHub account (free)
-- Admin or owner rights on the target repo
+- A GitHub account
+- Organization Owner or GitHub App Manager role (for organization-level installation)
+- Admin or write rights on target repositories
+- For app creators: "Where can this GitHub App be installed?" must be set to "Any account" (or app ownership transferred to the organization)
 
 ### Steps
 
-1. Go to https://github.com/apps/zimb-bot
+1. Go to https://github.com/apps/zimb-bot (or via developer settings at https://github.com/settings/apps/<app-slug>/installations)
 2. Click **Install** (green button, top right)
-3. Choose the org or user account (e.g. `Zimb`)
+3. Choose the target organization or user account (e.g. `Zimb` or `zimb-app`)
 4. Select repositories:
    - **All repositories** — bot works on every repo
    - **Only select repositories** — recommended (start with just `Zimb/zimb`)
 5. Click **Install & Authorize**
+
+### Organization Installation Troubleshooting
+
+If you own the GitHub App and see only an **Edit** button under `Developer settings -> GitHub Apps`, or your organization does not appear in the installation list:
+1. Click **Edit** on your app.
+2. In the **General** settings tab, change **"Where can this GitHub App be installed?"** to **"Any account"**, then save changes.
+3. In the left sidebar, click **Install App**, select your organization, and complete installation.
+4. Verify that your GitHub user account has the **Organization Owner** or **GitHub App Manager** role on the target organization.
+
+For detailed configuration instructions and diagnostic checklists, see [docs/GITHUB_APP_ORG_INSTALLATION.md](docs/GITHUB_APP_ORG_INSTALLATION.md).
 
 ### Verify it works
 
