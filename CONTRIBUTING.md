@@ -53,8 +53,9 @@ npx turbo run build
 ### Option A — From the `.vsix` file (easiest)
 
 ```bash
-# Download the latest VSIX from GitHub Releases:
-# https://github.com/Zimb/zimb/releases
+# Download the latest VSIX:
+#   - Tagged releases: https://github.com/Zimb/zimb/releases/tag/v0.1.0
+#   - Latest commit:   https://github.com/Zimb/zimb/raw/main/packages/extension/zimb-vscode-0.1.0.vsix
 
 code --install-extension zimb-vscode-0.1.0.vsix --force
 ```
@@ -62,7 +63,8 @@ code --install-extension zimb-vscode-0.1.0.vsix --force
 ### Option B — Build from source
 
 ```bash
-cd packages/extension
+git clone https://github.com/Zimb/zimb.git
+cd zimb/packages/extension
 npm install
 npm run build
 code --install-extension zimb-vscode-0.1.0.vsix --force
@@ -112,6 +114,8 @@ npm install
 cd packages/extension && npm install && npm run build
 code --install-extension zimb-vscode-0.1.0.vsix --force
 ```
+
+_(Already covered above for extension install — skip if you went through Option A.)_
 
 ### Step 2 — Open the project in VS Code
 
