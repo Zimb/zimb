@@ -79,7 +79,14 @@ tickets.post('/', async (c) => {
     }
     console.error('[POST /tickets] unexpected error', err);
     return c.json(
-      { ok: false, error: { code: 'internal_error', message: 'Failed to create ticket' } },
+      {
+        ok: false,
+        error: {
+          code: 'internal_error',
+          message: 'Failed to create ticket',
+          detail: err instanceof Error ? err.message : String(err),
+        },
+      },
       500
     );
   }
