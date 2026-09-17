@@ -7,6 +7,8 @@ import { notifyNewIssue } from '../commands/issueNotifier';
 import type { BountiesProvider, BountyIssue, BountyStatus } from '../bountiesProvider';
 import { composeIssueViaModel, composeIssueFallback } from './issueBuilder';
 import type { StructuredIssue } from './issueBuilder.types';
+import { parseDirectives, renderDirectivesFrontMatter, type ZimbDirectives } from './directivesParser';
+import { detectLanguage } from './i18n';
 
 /**
  * Registers the `@zimb` chat participant.
@@ -82,26 +84,38 @@ export function registerChatParticipant(
 
     // /issue → publish a GitHub Issue on the **current workspace's repo**.
     if (request.command === 'issue') {
-      const prompt = request.prompt.trim();
-      if (!prompt) {
+      const rawPrompt = request.prompt.trim();
+      if (!rawPrompt) {
         stream.markdown(
-          'Usage: `@zimb /issue <problem description>` — opens a bounty on the current repo.'
+          'Usage: `@zimb /issue <problem description> [-l en|fr|es|de] [-u low|medium|high|critical] [-b 5..5000] [-c EUR|USD|GBP|AUD]` — opens a bounty on the current repo.'
         );
         return;
       }
+
+      // ── Step 1: parse inline directives (e.g. -l fr -u critical -b 200 -c EUR) ──
+      const { description, directives } = parseDirectives(rawPrompt);
+      // Auto-detect language if not explicitly set
+      if (directives.lang === 'en' && directives.rawFlags.lang === undefined) {
+        const detected = detectLanguage(description);
+        if (detected !== 'en') directives.lang = detected;
+      }
+      // Show what we parsed
+      const dirSummary = `🌐 **${directives.lang}** · ${directives.urgency} · **${directives.bounty} ${directives.currency}**`;
+      stream.markdown(dirSummary + '\n');
+
       const editor = vscode.window.activeTextEditor;
       const selectedText =
         editor?.selection && !editor.selection.isEmpty
           ? editor.document.getText(editor.selection)
           : undefined;
 
-      // ── Compose via LLM (Copilot chat model) with a deterministic fallback ──
+      // ── Step 2: compose via LLM (Copilot chat model) with a deterministic fallback ──
       stream.progress('Composing structured ticket via Copilot…');
-      let composed: StructuredIssue = composeIssueFallback(prompt);
+      let composed: StructuredIssue = composeIssueFallback(description);
       let usedFallback = true;
       if (request.model && Array.isArray((request.model as { family?: unknown }).family)) {
         try {
-          const llm = await composeIssueViaModel(request.model, prompt, { ...(selectedText ? { selectedText } : {}) });
+          const llm = await composeIssueViaModel(request.model, description, { ...(selectedText ? { selectedText } : {}) });
           if (llm) {
             composed = llm;
             usedFallback = false;
@@ -110,19 +124,24 @@ export function registerChatParticipant(
           // fall through to deterministic fallback
         }
       }
+      // Directives OVERRIDE the LLM's guess (user is the source of truth)
+      composed.bounty = directives.bounty;
+      composed.urgency = directives.urgency;
+
       if (usedFallback) {
         stream.markdown('_(No Copilot model available — using fallback template.)_');
       } else {
         stream.markdown(
-          `✨ LLM composed: kind=**${composed.kind}**, suggested bounty **${composed.bounty}€**, urgency **${composed.urgency}**\n`
+          `✨ LLM composed: kind=**${composed.kind}**\n`
         );
       }
 
       stream.progress('Publishing bounty to GitHub…');
       try {
         const issue = await issueCreator.create({
-          chatPrompt: prompt,
+          chatPrompt: description,
           structured: composed,
+          directives,
           ...(selectedText ? { selectedText } : {}),
         });
         stream.markdown(

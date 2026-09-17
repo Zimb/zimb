@@ -26,6 +26,7 @@ import type { LanguageDetector } from './languageDetector';
 import type { RepoDetector } from './repoDetector';
 import { renderBountyBody } from '../chat/bountyRenderer';
 import type { StructuredIssue } from '../chat/issueBuilder.types';
+import { renderDirectivesFrontMatter, type ZimbDirectives } from '../chat/directivesParser';
 
 export interface CreateIssueInput {
   /** Raw chat transcript after the `@zimb` invocation. */
@@ -48,6 +49,12 @@ export interface CreateIssueInput {
    * Otherwise the body is built from the raw `chatPrompt` (legacy path).
    */
   structured?: StructuredIssue;
+  /**
+   * Optional inline directives (lang/urgency/bounty/currency).
+   * When provided, an HTML comment block is prepended to the body so the
+   * @zimb-bot can re-read them at claim time.
+   */
+  directives?: ZimbDirectives;
   /**
    * Override the target repo (e.g. `<owner>/<name>`). If omitted, the
    * extension falls back to the current workspace's git remote.
@@ -198,14 +205,22 @@ export class IssueCreator {
     ctx: IssueContext,
     target: { owner: string; repo: string }
   ): string {
+    // The hidden directives front-matter (parsed back by @zimb-bot at claim time)
+    const directivesFrontMatter = input.directives
+      ? '\n' + renderDirectivesFrontMatter(input.directives) + '\n'
+      : '';
+
     // Prefer the LLM-composed structured issue when available.
     if (input.structured) {
-      return renderBountyBody(input.structured, {
-        owner: target.owner,
-        repo: target.repo,
-        languages: ctx.languages,
-        bountyOverride: input.bounty ?? null,
-      });
+      return (
+        directivesFrontMatter +
+        renderBountyBody(input.structured, {
+          owner: target.owner,
+          repo: target.repo,
+          languages: ctx.languages,
+          bountyOverride: input.bounty ?? null,
+        })
+      );
     }
 
     // Legacy path: render from raw chatPrompt only (no LLM).
@@ -269,7 +284,7 @@ export class IssueCreator {
     sections.push(
       `## ✅ Acceptance criteria\n\n` +
         `- PR links this issue (\`Fixes #TBD\`)\n` +
-        `- Tests pass + lint clean + type-check clean\n` +
+        `- directivesFrontMatter + Tests pass + lint clean + type-check clean\n` +
         `- Delivered within 7 days\n`
     );
 
