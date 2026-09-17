@@ -25,8 +25,7 @@
 
 ## Bounty terms acceptance
 
-- [ ] I understand the bounty is paid via Stripe after merge
-- [ ] I've added my Stripe Connect account email to the PR description (or via [Zimb dashboard](https://app.zimb.app))
+- [ ] I understand the bounty is currently a public contribution credit (payment flow not active yet)
 - [ ] PR is open against `main` (not a fork branch)
 - [ ] Branch follows `zimb/<slug>` convention
 

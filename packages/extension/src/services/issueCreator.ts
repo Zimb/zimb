@@ -215,7 +215,7 @@ export class IssueCreator {
 
     sections.push(
       `## � Bounty\n\n` +
-        `**Bounty:** ${input.bounty ?? this.defaultBounty()}€ — paid via Stripe after PR merge.\n`
+        `**Bounty:** ${input.bounty ?? this.defaultBounty()}€ — _payment flow not active yet, currently a public contribution credit._\n`
     );
 
     sections.push(
@@ -240,12 +240,6 @@ export class IssueCreator {
         `- PR links this issue (\`Fixes #TBD\`)\n` +
         `- Tests pass + lint clean + type-check clean\n` +
         `- Delivered within 7 days\n`
-    );
-
-    sections.push(
-      `## 💸 Payment\n\n` +
-        `Stripe Connect payout within 24h of merge.\n` +
-        `Onboard at https://app.zimb.app first.\n`
     );
 
     sections.push(

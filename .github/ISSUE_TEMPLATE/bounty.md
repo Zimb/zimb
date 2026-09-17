@@ -62,8 +62,8 @@ gh pr create --fill --base main
 
 ## 💸 Payment
 
-Bounty paid via **Stripe Connect** within 24h after the PR is merged.
-Make sure your Stripe Connect Express account is onboarded at https://app.zimb.app before claiming.
+_Bounty payment flow not active yet — contribution credit only at this stage._
+_Token of appreciation given once the PR is merged._
 
 ---
 
