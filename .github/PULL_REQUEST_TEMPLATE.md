@@ -23,9 +23,10 @@
 - [ ] `npm run type-check` passes
 - [ ] No unrelated changes (drive-by refactor)
 
-## Bounty terms acceptance
+## Contribution terms acceptance
 
-- [ ] I understand the bounty is currently a public contribution credit (payment flow not active yet)
+- [ ] I understand this is an open-source beta project — contributions are voluntary and unpaid at this stage
+- [ ] I want my GitHub handle listed in the README contributors section
 - [ ] PR is open against `main` (not a fork branch)
 - [ ] Branch follows `zimb/<slug>` convention
 

@@ -5,6 +5,7 @@ import type { RepoDetector } from '../services/repoDetector';
 import type { IssueCreator } from '../services/issueCreator';
 import { notifyNewIssue } from '../commands/issueNotifier';
 import type { BountiesProvider, BountyIssue, BountyStatus } from '../bountiesProvider';
+import { composeIssueViaModel, composeIssueFallback, type ComposedIssue } from './issueBuilder';
 
 /**
  * Registers the `@zimb` chat participant.
@@ -93,10 +94,29 @@ export function registerChatParticipant(
           ? editor.document.getText(editor.selection)
           : undefined;
 
+      // ── Compose via LLM (Copilot chat model) with a deterministic fallback ──
+      stream.progress('Composing structured ticket via Copilot…');
+      let composed: ComposedIssue | null = null;
+      if (request.model && Array.isArray((request.model as { family?: unknown }).family)) {
+        try {
+          composed = await composeIssueViaModel(request.model, prompt, { ...(selectedText ? { selectedText } : {}) });
+        } catch {
+          composed = null;
+        }
+      }
+      if (!composed) {
+        composed = composeIssueFallback(prompt);
+        stream.markdown('_(No Copilot model available — using fallback template.)_');
+      } else {
+        stream.markdown(`✨ LLM composed: kind=**${composed.kind}**, suggested bounty **${composed.bounty}€**\n`);
+      }
+
       stream.progress('Publishing bounty to GitHub…');
       try {
         const issue = await issueCreator.create({
-          chatPrompt: prompt,
+          chatPrompt: composed.body,
+          ...(composed.title ? { titleOverride: composed.title } : {}),
+          ...(typeof composed.bounty === 'number' ? { bounty: composed.bounty } : {}),
           ...(selectedText ? { selectedText } : {}),
         });
         stream.markdown(

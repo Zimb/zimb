@@ -20,12 +20,6 @@ assignees: []
 
 <!-- What should happen instead? -->
 
-## 💰 Bounty
-
-<!-- EUR amount, e.g. 30€. Default if blank: see Zimb dashboard. -->
-
-**Bounty:** __€
-
 ## ⚙️ Environment
 
 - Repo: <!-- e.g. Zimb/zimb -->
@@ -34,7 +28,9 @@ assignees: []
 
 ---
 
-## 🚀 How to claim (for seniors)
+## 🤝 How to claim (for contributors)
+
+> 💡 This is a beta open-source project — contributions are voluntary and unpaid at this stage.
 
 Comment `@zimb-bot claim` and I'll:
 1. Add you as a collaborator with **push** access on this repo
@@ -60,10 +56,14 @@ gh pr create --fill --base main
 - [ ] CI green (`npm run lint && npm test && npm run type-check`)
 - [ ] Max 7 days between claim and merged PR
 
-## 💸 Payment
+## 💸 Recognition
 
-_Bounty payment flow not active yet — contribution credit only at this stage._
-_Token of appreciation given once the PR is merged._
+Once the PR is merged, you'll get:
+- Full credit on the README contributors list
+- A public shoutout on the issue & release notes
+- Permanent attribution in git history
+
+No payment or bounty is offered at this stage — this is a beta project.
 
 ---
 
