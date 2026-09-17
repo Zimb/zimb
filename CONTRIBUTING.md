@@ -81,88 +81,71 @@ code --install-extension zimb-vscode-0.1.0.vsix --force
 
 ---
 
-## 🤖 Install the @zimb-bot GitHub App
+## 🤖 `@zimb-bot` GitHub App — NOT WORKING YET
 
-**Prerequisites:**
-- A GitHub account (free)
-- Admin or owner rights on the target repo
+> ⚠️ The `@zimb-bot` GitHub App is **code-complete but not deployed**. The handler lives in `packages/worker/src/services/issueCommentHandler.ts`, but the `api.zimb.app` Cloudflare Worker is not deployed, so **the bot cannot react to comments today**.
+>
+> This means: even if you install `@zimb-bot` on your repo and comment `@zimb-bot claim` on an issue, **nothing happens automatically**. The claim flow currently has to be done manually:
+>
+> 1. Comment `@zimb-bot claim` on the issue
+> 2. A human (the founder, or anyone watching) reads the comment
+> 3. They manually invite you as a collaborator with `push` access
+> 4. You branch, push, PR as usual
 
-### Steps
-
-1. Go to https://github.com/apps/zimb-bot
-2. Click **Install** (green button, top right)
-3. Choose the org or user account (e.g. `Zimb`)
-4. Select repositories:
-   - **All repositories** — bot works on every repo
-   - **Only select repositories** — recommended (start with just `Zimb/zimb`)
-5. Click **Install & Authorize**
-
-### Verify it works
-
-1. Open any issue with the `bounty` label on `Zimb/zimb`
-2. Go to **Settings → Webhooks** on the repo
-3. You should see an active webhook pointing to `https://api.zimb.app/webhooks/github`
+This will become automatic once `api.zimb.app` is deployed (roadmap item, not done).
 
 ---
 
 ## 🧪 End-to-end test (5 minutes)
 
-### Step 1 — Clone and build
+**What this test actually covers today:**
+
+| Step | What it tests | Works? |
+|---|---|---|
+| 1. Install extension | Sidebar + chat commands appear | ✅ |
+| 2. Sign in to GitHub | OAuth flow completes | ✅ |
+| 3. `@zimb /redact` | LLM or fallback composes a structured draft | ✅ |
+| 4. `@zimb /post` | Issue appears on your GitHub repo with full body | ✅ |
+| 5. `@zimb-bot claim` | **Nothing automatic happens** — see above | ❌ |
+| 6. PR + merge | Standard GitHub PR flow | ✅ (you do it manually) |
+
+### Step 1 — Install the extension
 
 ```bash
-gh repo clone Zimb/zimb
-cd zimb
-npm install
-cd packages/extension && npm install && npm run build
-code --install-extension zimb-vscode-0.1.0.vsix --force
+code --install-extension https://github.com/Zimb/zimb/releases/download/v0.1.0/zimb-vscode-0.1.0.vsix --force
 ```
 
-_(Already covered above for extension install — skip if you went through Option A.)_
+Reload VS Code after.
 
-### Step 2 — Open the project in VS Code
+### Step 2 — Open a folder you own
 
-```bash
-cd ../..
-code .
-```
+Any git clone of a GitHub repo where you have push access. **The extension only creates issues on repos it can detect from the workspace's git remote.**
 
-### Step 3 — Sign in to GitHub from the extension
+### Step 3 — Sign in to GitHub
 
-- Click the **Zimb icon** in the activity bar
-- Click **Login with GitHub** in the sidebar
-- Authorize VS Code to access your GitHub account
+When you first use `/post` or `/status`, VS Code pops up a GitHub OAuth dialog. Approve it.
 
-### Step 4 — Create a bounty
+### Step 4 — Compose a bounty
 
-1. Open **Copilot Chat** (`Ctrl+Shift+I` / `Cmd+Shift+I`)
-2. Type: `@zimb /issue My app crashes when I logout twice in a row`
-3. Wait for the structured ticket to be generated (LLM-powered via Copilot)
-4. Click the banner → opens the new GitHub Issue
-5. The issue is created with sections 🎯 Problem / 🔬 Repro / 🎯 Expected vs Actual / 📋 Scope / ✅ Acceptance
-
-### Step 5 — Claim it
-
-Comment on the issue:
+In Copilot Chat:
 
 ```
-@zimb-bot claim
+@zimb /redact My app crashes when I logout twice in a row -u high -b 50
 ```
 
-The bot will:
-1. Assign the issue to you
-2. Add you as a collaborator with **push** access
-3. Reply with a 1-command snippet for branch + PR
+You should see a preview with a structured title, summary, and sections.
 
-### Step 6 — Make a PR
+### Step 5 — Publish
 
-```bash
-git checkout -b zimb/#<n>-<slug>
-# make your change
-git add -A
-git commit -m "Fix: ..."
-git push -u origin zimb/#<n>-<slug>
-gh pr create --fill --base main
 ```
+@zimb /post
+```
+
+The extension opens your browser to the new issue (or shows the URL inline). Verify the body has the full sections (🎯 Problem, 🔬 Repro, 🎯 Expected vs Actual, 📋 Scope, ✅ Acceptance).
+
+### Step 6 — Done
+
+That's it. **There is no automatic claim flow, no bot reaction, no payment today.** The senior claiming your bounty has to happen through normal GitHub collaboration (you invite them, they push, they PR).
 
 ---
 

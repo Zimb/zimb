@@ -26,31 +26,43 @@ That's it. The sidebar Zimb icon (left activity bar) shows your bounties + a per
 
 ---
 
-## 🌐 Subdomains
+## 🌐 What's actually working today (v0.1.0)
 
-| URL | Role | Stack |
+**Honest status — what's shipped and what's vapourware.**
+
+| Capability | Status | Notes |
 |---|---|---|
-| [zimb.app](https://zimb.app) | Marketing landing + senior recruitment | Astro (static) |
-| [app.zimb.app](https://app.zimb.app) | Senior Kanban (post-it, Lock & Timer) | Flutter Web |
-| [api.zimb.app](https://api.zimb.app) | Orchestration middleware | Cloudflare Worker (Hono) |
-| [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=zimb.zimb-vscode) | `@zimb` chat participant | TypeScript |
+| **Issue creation** (`/redact`, `/fix`, `/post`) | ✅ Works | Creates a GitHub issue with a structured body via Octokit |
+| **Chat commands** (`/bounties`, `/status`, `/discard`) | ✅ Works | Read-only commands against GitHub |
+| **Sidebar (Bounties + Notifications)** | ✅ Works | Tree view + persistent status bar badge |
+| **Notifications polling** (60s) | ✅ Works | Detects new comments / claims / status flips |
+| **Landing page** (zimb.app) | 🟡 Code only | Not deployed — `packages/landing/` is buildable but not live |
+| **Senior Kanban** (app.zimb.app) | 🟡 Code only | Not deployed — `packages/app-web/` exists but is frozen (see CONCEPT_REVIEW_AND_PIVOT) |
+| **`@zimb-bot` GitHub App claim flow** | 🟡 Code only | The handler exists in `packages/worker/` but `api.zimb.app` is not deployed, so no auto-claim happens today |
+| **Stripe Connect escrow** | 🟡 Code only | Stripe pre-auth + capture code exists but no live payments |
+| **Airtable ticket mirror** | 🟡 Code only | Worker can read/write Airtable, but the Worker isn't deployed |
+
+**TL;DR — the only thing that actually works end-to-end today is creating GitHub issues from VS Code.** Everything else is code on a shelf waiting for infrastructure.
 
 ## 📦 Monorepo
 
 ```
 zimb/
 ├── packages/
-│   ├── worker/      # @zimb/worker — Cloudflare Worker (api.zimb.app)
-│   ├── app-web/     # @zimb/app-web — Flutter Web Kanban (app.zimb.app)
-│   ├── extension/   # @zimb/extension — VS Code / Copilot @zimb chat
-│   └── landing/     # @zimb/landing — Astro landing (zimb.app)
-├── SPECIFICATIONS.md # Spec technique & produit exhaustive
-├── CDC.md            # Cahier des charges contractuel
-├── recettes/         # 64 scénarios Gherkin + template bug
-├── FOUNDER_NOTES.md  # Notes originales du fondateur (source de vérité v0)
+│   ├── extension/   # @zimb/extension — VS Code / Copilot @zimb chat  ✅ ACTIVE
+│   ├── worker/      # @zimb/worker — Cloudflare Worker (api.zimb.app) 🟡 code only, not deployed
+│   ├── app-web/     # @zimb/app-web — Flutter Web Kanban             🟡 frozen, not deployed
+│   └── landing/     # @zimb/landing — Astro landing                   🟡 code only, not deployed
+├── SPECIFICATIONS.md # Tech & product spec (exhaustive)
+├── docs/
+│   └── CHAT_COMMANDS.md  # Slash command reference
+├── recettes/         # Gherkin test scenarios
+├── FOUNDER_NOTES.md  # Original founder notes
 └── .github/
-    ├── agents/       # 8 agents custom Copilot spécialisés
-    └── workflows/    # CI GitHub Actions
+    ├── agents/       # 8 specialised Copilot agents
+    ├── ISSUE_TEMPLATE/
+    ├── PULL_REQUEST_TEMPLATE.md
+    └── workflows/    # CI
 ```
 
 ## 🚀 Try it (1 minute, no clone)
