@@ -1,0 +1,279 @@
+/**
+ * issueCreator.ts — Turn a Copilot `@zimb` conversation into a GitHub Issue
+ * on the **current workspace's repo** (not a central board).
+ *
+ * Skill reference: .github/skills/vscode-chat-extensions/SKILL.md
+ *
+ * Why per-user-repo instead of a central board?
+ *   - The bounty lives next to the code it concerns (FOUNDER_NOTES.md).
+ *   - The demandeur gets the issue directly in HIS GitHub Issues menu.
+ *   - No permission juggling — the senior pushes a branch on a repo the
+ *     demandeur already controls. No need to grant cross-account access.
+ *
+ * Flow:
+ *   1. Detect the GitHub repo from the current workspace's git remote.
+ *   2. Build a rich issue body (problem, hypotheses, evidence, stack).
+ *   3. POST to /repos/{owner}/{repo}/issues using the user's GitHub token.
+ *   4. Return the URL so the extension can show a banner with "Claim it".
+ *
+ * V2 TODO (api.zimb.app online):
+ *   - Mirror the issue to Airtable for Kanban display.
+ *   - Webhook `issues.assigned` from this repo → flip ticket status to `claimed`.
+ */
+import * as vscode from 'vscode';
+import type { GitHubAuthService } from '../auth/github';
+import type { LanguageDetector } from './languageDetector';
+import type { RepoDetector } from './repoDetector';
+
+export interface CreateIssueInput {
+  /** Raw chat transcript after the `@zimb` invocation. */
+  chatPrompt: string;
+  /** Optional follow-up replies the user gave in the chat. */
+  followUp?: string[];
+  /** Optional selection or file excerpt the user pointed at. */
+  selectedText?: string;
+  /** Optional bounty in EUR (default = config `zimb.bounty.defaultAmount`). */
+  bounty?: number;
+  /**
+   * Override the target repo (e.g. `<owner>/<name>`). If omitted, the
+   * extension falls back to the current workspace's git remote.
+   */
+  targetRepoOverride?: string;
+}
+
+export interface CreatedIssue {
+  number: number;
+  htmlUrl: string;
+  title: string;
+  owner: string;
+  repo: string;
+}
+
+interface IssueContext {
+  languages: string[];
+  repoUrl?: string;
+}
+
+export class IssueCreator {
+  constructor(
+    private readonly auth: GitHubAuthService,
+    private readonly languageDetector: LanguageDetector,
+    private readonly repoDetector: RepoDetector
+  ) {}
+
+  /**
+   * Resolve the target `<owner>/<repo>` for the bounty.
+   * Priority: explicit override > workspace git remote > error.
+   */
+  async resolveTargetRepo(override?: string): Promise<{ owner: string; repo: string }> {
+    const candidate = override ?? (await this.safeDetectRepo());
+    if (!candidate) {
+      throw new Error(
+        'No GitHub repo detected. Open a folder that is a git clone of your GitHub project, ' +
+        'or pass a target repo explicitly via the chat command (e.g. `@zimb /issue owner/repo …`).'
+      );
+    }
+    const parts = candidate
+      .replace(/^https?:\/\/github\.com\//, '')
+      .replace(/\.git$/, '')
+      .split('/');
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+      throw new Error(`Could not parse "${candidate}" as owner/repo.`);
+    }
+    return { owner: parts[0], repo: parts[1] };
+  }
+
+  /**
+   * Build the issue payload from the chat context. Pure function — no I/O.
+   */
+  buildPayload(
+    input: CreateIssueInput,
+    ctx: IssueContext,
+    target: { owner: string; repo: string }
+  ): { title: string; body: string; labels: string[] } {
+    const firstLine = input.chatPrompt.split(/\r?\n/)[0]?.trim() ?? '';
+    const title = firstLine.length > 0
+      ? firstLine.slice(0, 80)
+      : `Debug bounty from VS Code (${target.owner}/${target.repo})`;
+
+    const body = this.renderBody(input, ctx, target);
+    return { title, body, labels: ['zimb', 'from-vscode', 'bounty'] };
+  }
+
+  /**
+   * Create the issue via the GitHub REST API on the current repo.
+   */
+  async create(input: CreateIssueInput): Promise<CreatedIssue> {
+    const session = await this.auth.getSession();
+    if (!session) {
+      throw new Error('Not signed in to GitHub. Run `Zimb: Login with GitHub` first.');
+    }
+
+    const target = await this.resolveTargetRepo(input.targetRepoOverride);
+    const ctx: IssueContext = {
+      languages: await this.safeDetectLanguages(),
+      repoUrl: `https://github.com/${target.owner}/${target.repo}`,
+    };
+
+    const { title, body, labels } = this.buildPayload(input, ctx, target);
+
+    const res = await fetch(
+      `https://api.github.com/repos/${target.owner}/${target.repo}/issues`,
+      {
+        method: 'POST',
+        headers: {
+          Accept: 'application/vnd.github+json',
+          Authorization: `Bearer ${session.accessToken}`,
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28',
+          'User-Agent': 'zimb-vscode',
+        },
+        body: JSON.stringify({ title, body, labels }),
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`GitHub API ${res.status} on ${target.owner}/${target.repo}: ${text}`);
+    }
+    const json = (await res.json()) as { number: number; html_url: string; title: string };
+    return {
+      number: json.number,
+      htmlUrl: json.html_url,
+      title: json.title,
+      owner: target.owner,
+      repo: target.repo,
+    };
+  }
+
+  /**
+   * Convenience: claim an issue by commenting `@zimb-bot claim` on it.
+   * Uses the user's GitHub token (NOT the bot's).
+   */
+  async claimIssue(target: { owner: string; repo: string }, issueNumber: number): Promise<void> {
+    const session = await this.auth.getSession();
+    if (!session) throw new Error('Not signed in to GitHub.');
+
+    const res = await fetch(
+      `https://api.github.com/repos/${target.owner}/${target.repo}/issues/${issueNumber}/comments`,
+      {
+        method: 'POST',
+        headers: {
+          Accept: 'application/vnd.github+json',
+          Authorization: `Bearer ${session.accessToken}`,
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28',
+          'User-Agent': 'zimb-vscode',
+        },
+        body: JSON.stringify({ body: '@zimb-bot claim' }),
+      }
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Failed to claim (${res.status}): ${text}`);
+    }
+  }
+
+  // ── Internals ────────────────────────────────────────────────
+
+  private renderBody(
+    input: CreateIssueInput,
+    ctx: IssueContext,
+    target: { owner: string; repo: string }
+  ): string {
+    const sections: string[] = [];
+    sections.push(`## 🎯 Problem\n\n${input.chatPrompt.trim()}\n`);
+
+    if (input.followUp && input.followUp.length > 0) {
+      sections.push(
+        `## 💬 Follow-up clarifications\n\n` +
+          input.followUp.map((m, i) => `- (${i + 1}) ${m.trim()}`).join('\n')
+      );
+    }
+
+    sections.push(
+      `## 🧪 Hypotheses already ruled out\n\n` +
+        `_To be filled by the requester — copy/paste any debug steps already tried._\n`
+    );
+
+    sections.push(
+      `## 🔍 Root node / pinpoint\n\n` +
+        `_Describe the smallest unit that still misbehaves (function, route, line, …)._\n`
+    );
+
+    if (input.selectedText && input.selectedText.length > 0) {
+      sections.push(
+        `## 📎 Selected excerpt\n\n\`\`\`\n${input.selectedText.slice(0, 2000)}\n\`\`\`\n`
+      );
+    }
+
+    sections.push(
+      `## 🛠️ Stack\n\n` +
+        `- **Repo**: [${target.owner}/${target.repo}](https://github.com/${target.owner}/${target.repo})\n` +
+        `- **Languages**: ${ctx.languages.length > 0 ? ctx.languages.join(', ') : '_unknown_'}\n`
+    );
+
+    sections.push(
+      `## � Bounty\n\n` +
+        `**Bounty:** ${input.bounty ?? this.defaultBounty()}€ — paid via Stripe after PR merge.\n`
+    );
+
+    sections.push(
+      `## 🚀 How to claim (for seniors)\n\n` +
+        `Comment \`@zimb-bot claim\` on this issue and I'll:\n` +
+        `1. Add you as a collaborator with **push** access on this repo\n` +
+        `2. Reply with a 1-command copy-paste for branch + PR\n\n` +
+        `After accepting the invite:\n\n` +
+        '```bash\n' +
+        `gh repo clone ${target.owner}/${target.repo}\n` +
+        `cd ${target.repo}\n` +
+        `git checkout -b zimb/#TBD-<short-slug>\n` +
+        `# ... your fix ...\n` +
+        `git add -A && git commit -m "Fix: <one-line summary>"\n` +
+        `git push -u origin zimb/#TBD-<short-slug>\n` +
+        `gh pr create --fill --base main\n` +
+        '```\n'
+    );
+
+    sections.push(
+      `## ✅ Acceptance criteria\n\n` +
+        `- PR links this issue (\`Fixes #TBD\`)\n` +
+        `- Tests pass + lint clean + type-check clean\n` +
+        `- Delivered within 7 days\n`
+    );
+
+    sections.push(
+      `## 💸 Payment\n\n` +
+        `Stripe Connect payout within 24h of merge.\n` +
+        `Onboard at https://app.zimb.app first.\n`
+    );
+
+    sections.push(
+      `---\n\n_Powered by [Zimb](https://zimb.app) — bounty debugging for Vibe Coders_`
+    );
+
+    return sections.join('\n\n');
+  }
+
+  /** Default bounty in EUR, read from VS Code config (`zimb.bounty.defaultAmount`). */
+  private defaultBounty(): number {
+    return vscode.workspace.getConfiguration('zimb').get<number>('bounty.defaultAmount') ?? 30;
+  }
+
+  private async safeDetectLanguages(): Promise<string[]> {
+    try {
+      const detected = await this.languageDetector.detect();
+      return detected.map((d) => d.language);
+    } catch {
+      return [];
+    }
+  }
+
+  private async safeDetectRepo(): Promise<string | undefined> {
+    try {
+      return await this.repoDetector.detect();
+    } catch {
+      return undefined;
+    }
+  }
+}

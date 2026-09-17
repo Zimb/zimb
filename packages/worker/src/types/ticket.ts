@@ -18,6 +18,7 @@ export type Urgency = 'low' | 'medium' | 'high' | 'critical';
 export type Language =
   | 'TypeScript'
   | 'JavaScript'
+  | 'Node.js'
   | 'Python'
   | 'Go'
   | 'Rust'

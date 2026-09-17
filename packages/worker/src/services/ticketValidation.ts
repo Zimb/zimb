@@ -10,6 +10,7 @@ export const ChannelSchema = z.enum(['web', 'vscode']);
 export const LanguageSchema = z.enum([
   'TypeScript',
   'JavaScript',
+  'Node.js',
   'Python',
   'Go',
   'Rust',

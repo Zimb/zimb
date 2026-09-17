@@ -23,7 +23,10 @@ import {
   getTicketByZimbId,
   updateClaimStatus,
   updateTicket,
+  type AirtableTicketUpdate,
 } from '../adapters/airtable';
+import { kanbanBroadcast } from '../services/kanbanBroadcast';
+import { getGithubBot } from '../adapters/githubBot';
 
 const CLAIM_DURATION_MINUTES = 45;
 
@@ -31,6 +34,12 @@ const claims = new Hono<{ Bindings: Env }>();
 
 claims.post('/', async (c) => {
   const ticketId = c.req.param('id');
+  if (!ticketId) {
+    return c.json(
+      { ok: false, error: { code: 'bad_request', message: 'Missing ticket id' } },
+      400
+    );
+  }
   const seniorId = c.get('auth').userId;
   const now = new Date();
   const expiresAt = new Date(now.getTime() + CLAIM_DURATION_MINUTES * 60_000);
@@ -153,7 +162,37 @@ claims.post('/', async (c) => {
     );
   }
 
-  // ── Step 5 (M3): broadcast TICKET_GONE to other seniors ────
+  // ── Step 5: M3.6 — broadcast TICKET_GONE + CLAIMED_BY_ME ───
+  // Best-effort: don't fail the claim if the DO is temporarily down.
+  try {
+    await kanbanBroadcast(c.env, { type: 'TICKET_GONE', ticketId });
+    await kanbanBroadcast(
+      c.env,
+      { type: 'CLAIMED_BY_ME', ticket: updated, seniorId },
+      seniorId
+    );
+  } catch (err) {
+    console.warn('[POST /tickets/:id/claim] kanban broadcast failed', err);
+  }
+
+  // ── Step 6: M3.2 — provision GitHub repo + branch + invite senior ───
+  // Done here (instead of /deliver) so the senior can push immediately
+  // after claiming. All 3 ops are idempotent; failures are logged but
+  // don't roll back the claim (the senior can retry via /deliver if needed).
+  try {
+    const bot = getGithubBot(c.env);
+    const repoUrl = await bot.createTicketRepo({ ticketId, title: ticket.title });
+    await bot.createBranch({ ticketId, title: ticket.title });
+    await bot.inviteSenior({ ticketId, seniorGhLogin: seniorId });
+    // Persist repoUrl back to Airtable (non-blocking)
+    if (updated.airtableRecordId) {
+      const patch: AirtableTicketUpdate = { repoUrl };
+      await updateTicket(c.env, updated.airtableRecordId, '*', patch);
+      updated.repoUrl = repoUrl;
+    }
+  } catch (err) {
+    console.warn(`[POST /tickets/:id/claim] GitHub provisioning failed`, err);
+  }
 
   return c.json(
     {

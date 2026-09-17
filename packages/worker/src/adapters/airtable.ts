@@ -56,7 +56,7 @@ function nextTicketId(existingCount: number): string {
 
 function airtableRecordToTicket(record: { id: string; fields: Record<string, unknown> }): Ticket {
   const f = record.fields;
-  return {
+  const ticket: Ticket = {
     id: String(f.id ?? ''),
     title: String(f.title ?? ''),
     description: String(f.description ?? ''),
@@ -68,16 +68,19 @@ function airtableRecordToTicket(record: { id: string; fields: Record<string, unk
     channel: (f.channel as Channel) ?? 'web',
     createdAt: String(f.created_at ?? ''),
     createdBy: String(f.created_by ?? ''),
-    claimedBy: f.claimed_by ? String(f.claimed_by) : undefined,
-    deliveredAt: f.delivered_at ? String(f.delivered_at) : undefined,
-    validatedAt: f.validated_at ? String(f.validated_at) : undefined,
-    autoValidatedAt: f.auto_validated_at ? String(f.auto_validated_at) : undefined,
-    disputeOpenedAt: f.dispute_opened_at ? String(f.dispute_opened_at) : undefined,
-    slaDisputeDeadline: f.sla_dispute_deadline ? String(f.sla_dispute_deadline) : undefined,
-    assignedReviewerId: f.assigned_reviewer_id ? String(f.assigned_reviewer_id) : undefined,
-    stripePaymentIntentId: f.stripe_payment_intent_id ? String(f.stripe_payment_intent_id) : undefined,
-    airtableRecordId: record.id,
   };
+
+  if (f.claimed_by) ticket.claimedBy = String(f.claimed_by);
+  if (f.delivered_at) ticket.deliveredAt = String(f.delivered_at);
+  if (f.validated_at) ticket.validatedAt = String(f.validated_at);
+  if (f.auto_validated_at) ticket.autoValidatedAt = String(f.auto_validated_at);
+  if (f.dispute_opened_at) ticket.disputeOpenedAt = String(f.dispute_opened_at);
+  if (f.sla_dispute_deadline) ticket.slaDisputeDeadline = String(f.sla_dispute_deadline);
+  if (f.assigned_reviewer_id) ticket.assignedReviewerId = String(f.assigned_reviewer_id);
+  if (f.stripe_payment_intent_id) ticket.stripePaymentIntentId = String(f.stripe_payment_intent_id);
+  ticket.airtableRecordId = record.id;
+
+  return ticket;
 }
 
 // ─── Public API ────────────────────────────────────────────────
@@ -155,7 +158,9 @@ export async function getTicketByZimbId(env: Env, ticketId: string): Promise<Tic
   if (!res.ok) throw new Error(`Airtable getTicket failed: ${res.status}`);
   const data = (await res.json()) as { records: Array<{ id: string; fields: Record<string, unknown> }> };
   if (data.records.length === 0) return null;
-  return airtableRecordToTicket(data.records[0]);
+  const record = data.records[0];
+  if (!record) return null;
+  return airtableRecordToTicket(record);
 }
 
 /**
@@ -182,11 +187,26 @@ export async function listTickets(
  * Returns the updated ticket.
  * Returns null if the record was modified concurrently (412 Precondition Failed).
  */
+
+/** Fields accepted by `updateTicket` (subset of Ticket columns mappable to Airtable). */
+export interface AirtableTicketUpdate {
+  status?: TicketStatus;
+  claimedBy?: string;
+  deliveredAt?: string;
+  validatedAt?: string;
+  autoValidatedAt?: string;
+  disputeOpenedAt?: string;
+  slaDisputeDeadline?: string;
+  assignedReviewerId?: string;
+  stripePaymentIntentId?: string;
+  repoUrl?: string;
+}
+
 export async function updateTicket(
   env: Env,
   airtableRecordId: string,
   expectedRevision: string,
-  patch: Partial<Ticket>
+  patch: AirtableTicketUpdate
 ): Promise<Ticket | null> {
   // Build the fields payload (only known Airtable columns)
   const fields: Record<string, unknown> = {};
@@ -202,6 +222,7 @@ export async function updateTicket(
     fields.assigned_reviewer_id = patch.assignedReviewerId;
   if (patch.stripePaymentIntentId !== undefined)
     fields.stripe_payment_intent_id = patch.stripePaymentIntentId;
+  if (patch.repoUrl !== undefined) fields.repo_url = patch.repoUrl;
 
   const res = await withRetry(() =>
     airtableFetch(env, `/Tickets/${airtableRecordId}`, {
@@ -239,14 +260,16 @@ export async function getActiveClaim(env: Env, ticketId: string): Promise<ClaimR
   if (!res.ok) throw new Error(`Airtable getActiveClaim failed: ${res.status}`);
   const data = (await res.json()) as { records: Array<{ id: string; fields: Record<string, unknown> }> };
   if (data.records.length === 0) return null;
-  const f = data.records[0].fields;
+  const record = data.records[0];
+  if (!record) return null;
+  const f = record.fields;
   return {
     ticketId: String(f.ticket_id),
     seniorId: String(f.senior_id),
     claimedAt: String(f.claimed_at),
     expiresAt: String(f.expires_at),
     status: 'active',
-    airtableRecordId: data.records[0].id,
+    airtableRecordId: record.id,
   };
 }
 

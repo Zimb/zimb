@@ -11,11 +11,15 @@ import { GitHubAuthService } from './auth/github';
 import { ApiClient } from './services/apiClient';
 import { LanguageDetector } from './services/languageDetector';
 import { RepoDetector } from './services/repoDetector';
+import { IssueCreator } from './services/issueCreator';
+import { BountiesProvider, BountyIssue } from './bountiesProvider';
 
 let authService: GitHubAuthService;
 let apiClient: ApiClient;
 let languageDetector: LanguageDetector;
 let repoDetector: RepoDetector;
+let issueCreator: IssueCreator;
+let bountiesProvider: BountiesProvider;
 
 export async function activate(context: vscode.ExtensionContext) {
   console.log('[zimb] extension activating');
@@ -28,12 +32,30 @@ export async function activate(context: vscode.ExtensionContext) {
   );
   languageDetector = new LanguageDetector();
   repoDetector = new RepoDetector();
+  issueCreator = new IssueCreator(authService, languageDetector, repoDetector);
+
+  // ── Sidebar: Bounties tree view ──────────────────────────────
+  bountiesProvider = new BountiesProvider(authService, issueCreator, context);
+  const treeView = vscode.window.createTreeView('zimb.bounties', {
+    treeDataProvider: bountiesProvider,
+    showCollapseAll: true,
+  });
+  context.subscriptions.push(treeView);
+  void bountiesProvider.bootstrap();
+  context.subscriptions.push(
+    vscode.commands.registerCommand('zimb.refreshBounties', () => bountiesProvider.refresh())
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('zimb.openBounty', (issue: BountyIssue) => {
+      vscode.env.openExternal(vscode.Uri.parse(issue.htmlUrl));
+    })
+  );
 
   // ── Chat participant ─────────────────────────────────────────
-  registerChatParticipant(context, apiClient, languageDetector, repoDetector);
+  registerChatParticipant(context, apiClient, languageDetector, repoDetector, issueCreator, bountiesProvider);
 
   // ── Commands (palette + menu) ────────────────────────────────
-  registerCommands(context, apiClient, languageDetector, repoDetector);
+  registerCommands(context, apiClient, languageDetector, repoDetector, authService, issueCreator);
 
   console.log('[zimb] extension activated');
 }

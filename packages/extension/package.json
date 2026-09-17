@@ -7,7 +7,7 @@
   "publisher": "zimb",
   "license": "UNLICENSED",
   "engines": {
-    "vscode": "^1.94.0"
+    "vscode": ">=1.94.0"
   },
   "categories": [
     "Other"
@@ -27,6 +27,27 @@
     "onCommand:zimb.logout"
   ],
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "zimb-sidebar",
+          "title": "Zimb",
+          "icon": "assets/zimb.png"
+        }
+      ]
+    },
+    "views": {
+      "zimb-sidebar": [
+        {
+          "id": "zimb.bounties",
+          "name": "Bounties",
+          "contextualTitle": "Zimb bounties",
+          "icon": "assets/zimb.png",
+          "initialState": "expanded",
+          "when": "config.zimb.enabled"
+        }
+      ]
+    },
     "chatParticipants": [
       {
         "id": "zimb",
@@ -39,8 +60,16 @@
             "description": "Open the ticket submission form"
           },
           {
+            "name": "issue",
+            "description": "Publish the chat as a GitHub Issue (V1 first runnable loop)"
+          },
+          {
             "name": "status",
             "description": "Check the status of a ticket"
+          },
+          {
+            "name": "bounties",
+            "description": "List all bounties in the current repo (sidebar mirror)"
           }
         ]
       }
@@ -59,6 +88,21 @@
       {
         "command": "zimb.logout",
         "title": "Zimb: Logout",
+        "category": "Zimb"
+      },
+      {
+        "command": "zimb.claimIssueInteractive",
+        "title": "Zimb: Claim a Zimb issue by number",
+        "category": "Zimb"
+      },
+      {
+        "command": "zimb.openBounty",
+        "title": "Zimb: Open bounty on GitHub",
+        "category": "Zimb"
+      },
+      {
+        "command": "zimb.refreshBounties",
+        "title": "Zimb: Refresh bounties",
         "category": "Zimb"
       }
     ],

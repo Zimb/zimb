@@ -11,6 +11,9 @@ import { Hono } from 'hono';
 import type { Env } from '../types/env';
 import { CreateTicketSchema, parseOrThrow, ValidationError } from '../services/ticketValidation';
 import { createTicket, getTicketByZimbId, listTickets } from '../adapters/airtable';
+import { DeliveryError, markTicketDelivered } from '../services/delivery';
+import { requireRole } from '../middleware/auth';
+import { kanbanBroadcast } from '../services/kanbanBroadcast';
 
 const tickets = new Hono<{ Bindings: Env }>();
 
@@ -52,7 +55,12 @@ tickets.post('/', async (c) => {
 
     // 4. TODO (M4): create Stripe pre-auth PaymentIntent
 
-    // 5. TODO (M3): broadcast TICKET_CREATED on Kanban Durable Object
+    // 5. M3.6: broadcast TICKET_CREATED on Kanban Durable Object (best-effort)
+    try {
+      await kanbanBroadcast(c.env, { type: 'TICKET_CREATED', ticket });
+    } catch (err) {
+      console.warn('[POST /tickets] kanban broadcast failed', err);
+    }
 
     return c.json({ ok: true, data: ticket }, 201);
   } catch (err) {
@@ -104,12 +112,59 @@ tickets.get('/:id', async (c) => {
   return c.json({ ok: true, data: ticket });
 });
 
-// ─── POST /tickets/:id/deliver (stub — implemented in M3) ──────
-tickets.post('/:id/deliver', (c) =>
-  c.json(
-    { ok: false, error: { code: 'not_implemented', message: 'POST /tickets/:id/deliver — implemented in M3' } },
-    501
-  )
+// ─── POST /tickets/:id/deliver (M3.2) ─────────────────────────
+// Senior marks the ticket as delivered. Triggers GitHub repo creation + invite.
+// RBAC: requireRole('senior') is applied at mount time in src/index.ts.
+tickets.post(
+  '/:id/deliver',
+  requireRole('senior'),
+  async (c) => {
+    const ticketId = c.req.param('id');
+    if (!ticketId) {
+      return c.json(
+        { ok: false, error: { code: 'bad_request', message: 'Missing ticket id' } },
+        400
+      );
+    }
+    const seniorId = c.get('auth').userId;
+    try {
+      const ticket = await markTicketDelivered(c.env, ticketId, seniorId);
+      // M3.6: broadcast DELIVERED on Kanban (best-effort)
+      try {
+        await kanbanBroadcast(c.env, { type: 'DELIVERED', ticket });
+      } catch (err) {
+        console.warn('[POST /tickets/:id/deliver] kanban broadcast failed', err);
+      }
+      return c.json(
+        {
+          ok: true,
+          data: {
+            ticket,
+            repoUrl: ticket.repoUrl,
+            deliveredAt: ticket.deliveredAt,
+          },
+        },
+        200
+      );
+    } catch (err) {
+      if (err instanceof DeliveryError) {
+        const status =
+          err.code === 'not_found' ? 404
+          : err.code === 'forbidden' ? 403
+          : err.code === 'invalid_state' ? 409
+          : 500;
+        return c.json(
+          { ok: false, error: { code: err.code, message: err.message } },
+          status
+        );
+      }
+      console.error('[POST /tickets/:id/deliver] unexpected error', err);
+      return c.json(
+        { ok: false, error: { code: 'internal_error', message: 'Failed to mark ticket delivered' } },
+        500
+      );
+    }
+  }
 );
 
 // ─── POST /tickets/:id/validate (Stub M1-M3 — sans Stripe) ────

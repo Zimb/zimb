@@ -32,7 +32,8 @@ import claims from './routes/claims';
 import webhooks from './routes/webhooks';
 import me from './routes/me';
 import track from './routes/track';
-import { authMiddleware } from './middleware/auth';
+import auth from './routes/auth';
+import { authMiddleware, requireRole } from './middleware/auth';
 import { rateLimitMiddleware } from './middleware/rateLimit';
 
 export { KanbanSession } from './durable-objects/KanbanSession';
@@ -67,6 +68,7 @@ app.get('/health', (c) =>
 );
 
 // ─── Public routes ───────────────────────────────────────────────
+app.route('/auth', auth);
 app.route('/track', track);
 
 // ─── Webhooks (signature-verified, no JWT) ──────────────────────
@@ -81,7 +83,9 @@ app.route('/tickets', tickets);
 app.route('/me', me);
 
 // ─── Claims (nested under /tickets) ─────────────────────────────
+// M3.1: only users with role='senior' can claim
 app.use('/tickets/:id/claim', authMiddleware);
+app.use('/tickets/:id/claim', requireRole('senior'));
 app.use('/tickets/:id/claim', rateLimitMiddleware);
 app.route('/tickets/:id/claim', claims);
 

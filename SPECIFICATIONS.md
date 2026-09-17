@@ -279,6 +279,100 @@ En complément de l'extension VS Code / Copilot, le **formulaire de création de
 - Implémentation : `POST /tickets/:id/claim` avec `If-Match` sur la version Airtable (`recordId` + `revision`).
 - En cas de 409, le client (Flutter Web) rafraîchit immédiatement la vue Kanban.
 
+---
+
+## 7. V2 — Bounty sur le repo du demandeur (sans board centralisé)
+
+### 7.1 Pourquoi ce pivot
+
+Le board centralisé `Zimb/zimb-issues` a été abandonné au profit d'une approche **par-repo** : chaque bounty devient une **Issue sur le repo GitHub du demandeur**, là où vit le code concerné. Cette décision vient de `FOUNDER_NOTES.md` :
+
+> "il y a automatisation github api, vers le depot privé et révocation automatique de l'accès et eventuellement la création d'une branche via @zimb"
+
+### 7.2 Nouveau flow end-to-end
+
+```
+[Vibe Coder]                                       [Senior tiers]
+     │                                                    │
+     │  1. Ouvre VS Code sur son repo GitHub (git clone) │
+     │  2. `@zimb /issue mon problème`                   │
+     │     (capture auto: langages, remote, sélection)   │
+     │                                                    │
+     │  3. Extension détecte le remote GitHub du workspace │
+     │     → POST /repos/{owner}/{repo}/issues           │
+     │        (token user via vscode.authentication)      │
+     │                                                    │
+     │  4. Issue visible dans le menu GitHub Issues      │
+     │     du repo, dans le chat VS Code,                │
+     │     et bannière native VS Code en bas à droite     │
+     │                                                    │
+     │                                                    │
+     │  5. Senior voit la bannière, clique "Claim it"    │
+     │     → Commentaire `@zimb-bot claim`               │
+     │        posté via le **token du senior**            │
+     │                                                    │
+     │  6. Bot @zimb-bot :                                │
+     │     - assign l'issue au senior                    │
+     │     - ajoute senior comme collaborator            │
+     │       (permission: push)                          │
+     │     - crée branche `zimb/T-XXXX`                   │
+     │                                                    │
+     │  7. Senior push + ouvre PR `zimb/T-XXXX → main`   │
+     │     → Bot webhook `pull_request`                  │
+     │     → Statut ticket: `delivered`                  │
+     │                                                    │
+     │  8. Demandeur review + merge                       │
+     │     → Quick Win! → paiement via Stripe            │
+     │     OU délai 24h → auto-close                      │
+```
+
+### 7.3 Permissions minimales du bot @zimb-bot
+
+| Permission | Valeur | Pourquoi |
+|---|---|---|
+| Repository **Contents** | Read & Write | Créer branches, push commits, merger PR |
+| Repository **Pull requests** | Read & Write | Créer la PR du senior |
+| Repository **Metadata** | Read-only | Lire infos du repo |
+| Organization **Members** | Read & Write | Inviter/révoquer le senior |
+| Organization **Administration** | **No access** | Pas besoin — trop permissif |
+
+### 7.4 États de la conversation Zimb (côté VS Code)
+
+| Commande chat | Action |
+|---|---|
+| `@zimb mon problème` | Ouvre formulaire pré-rempli (V1 web form) |
+| `@zimb /submit` | Idem, explicite |
+| `@zimb /status T-XXXX` | Lit statut via `api.zimb.app` |
+| `@zimb /issue mon problème` | **V2** : publie Issue sur le repo courant |
+| `@zimb /issue owner/repo mon problème` | Override du repo cible |
+
+### 7.5 Pourquoi pas de board centralisé ?
+
+- ✅ **Proximité du code** : le bounty est à côté du bug
+- ✅ **Permissions naturelles** : le senior push sur le repo du demandeur (qu'il connaît)
+- ✅ **Pas de cross-account** : pas besoin de grant access à un repo externe
+- ✅ **Notification native** : le demandeur voit le bounty dans SES Issues
+- ✅ **Webhooks simplifiés** : un webhook par repo (le bot détecte auto)
+
+### 7.6 Code livré (état au 2026-09-17)
+
+- `packages/extension/src/services/issueCreator.ts` — détecte le remote, crée l'Issue
+- `packages/extension/src/commands/issueNotifier.ts` — bannière VS Code
+- `packages/extension/src/commands.ts` — commande `zimb.claimIssue(Interactive)`
+- `packages/extension/src/chat/participant.ts` — branche `/issue`
+- `packages/extension/src/services/repoDetector.ts` — détecte owner/repo depuis `git remote`
+
+### 7.7 Étapes suivantes (M3 → M4)
+
+1. ⏳ Installer `@zimb-bot` sur le repo du demandeur (one-click via UI GitHub)
+2. ⏳ Webhook `issues.assigned` → appel `POST /tickets/:id/claim` côté api.zimb.app
+3. ⏳ Webhook `pull_request.merged` → `POST /tickets/:id/deliver`
+4. ⏳ Stripe Connect escrow pour le paiement
+
+---
+
+*Document maintenu par l'équipe Zimb — Dernière mise à jour : 2026-09-17 (V2)*
+
 #### 4.2.2 Expiration du timer
 
 - **Cron job** côté middleware toutes les **60 s** : scan des `ticket_claims` dont `expires_at < now()`.
@@ -771,3 +865,97 @@ JWT_SECRET          = "..."
 ---
 
 *Document maintenu par l'équipe Zimb — Dernière mise à jour : 2026-09-16*
+
+---
+
+## 7. V2 � Bounty sur le repo du demandeur (sans board centralis�)
+
+### 7.1 Pourquoi ce pivot
+
+Le board centralis� Zimb/zimb-issues a �t� abandonn� au profit d'une approche **par-repo** : chaque bounty devient une **Issue sur le repo GitHub du demandeur**, l� o� vit le code concern�. Cette d�cision vient de FOUNDER_NOTES.md :
+
+> "il y a automatisation github api, vers le depot priv� et r�vocation automatique de l'acc�s et eventuellement la cr�ation d'une branche via @zimb"
+
+### 7.2 Nouveau flow end-to-end
+
+`
+[Vibe Coder]                                       [Senior tiers]
+     �                                                    �
+     �  1. Ouvre VS Code sur son repo GitHub (git clone) �
+     �  2. @zimb /issue mon probl�me                   �
+     �     (capture auto: langages, remote, s�lection)   �
+     �                                                    �
+     �  3. Extension d�tecte le remote GitHub du workspace �
+     �     ? POST /repos/{owner}/{repo}/issues           �
+     �        (token user via vscode.authentication)      �
+     �                                                    �
+     �  4. Issue visible dans le menu GitHub Issues      �
+     �     du repo, dans le chat VS Code,                �
+     �     et banni�re native VS Code en bas � droite     �
+     �                                                    �
+     �                                                    �
+     �  5. Senior voit la banni�re, clique "Claim it"    �
+     �     ? Commentaire @zimb-bot claim               �
+     �        post� via le **token du senior**            �
+     �                                                    �
+     �  6. Bot @zimb-bot :                                �
+     �     - assign l'issue au senior                    �
+     �     - ajoute senior comme collaborator            �
+     �       (permission: push)                          �
+     �     - cr�e branche zimb/T-XXXX                   �
+     �                                                    �
+     �  7. Senior push + ouvre PR zimb/T-XXXX ? main   �
+     �     ? Bot webhook pull_request                  �
+     �     ? Statut ticket: delivered                  �
+     �                                                    �
+     �  8. Demandeur review + merge                       �
+     �     ? Quick Win! ? paiement via Stripe            �
+     �     OU d�lai 24h ? auto-close                      �
+`
+
+### 7.3 Permissions minimales du bot @zimb-bot
+
+| Permission | Valeur | Pourquoi |
+|---|---|---|
+| Repository **Contents** | Read & Write | Cr�er branches, push commits, merger PR |
+| Repository **Pull requests** | Read & Write | Cr�er la PR du senior |
+| Repository **Metadata** | Read-only | Lire infos du repo |
+| Organization **Members** | Read & Write | Inviter/r�voquer le senior |
+| Organization **Administration** | **No access** | Pas besoin � trop permissif |
+
+### 7.4 �tats de la conversation Zimb (c�t� VS Code)
+
+| Commande chat | Action |
+|---|---|
+| @zimb mon probl�me | Ouvre formulaire pr�-rempli (V1 web form) |
+| @zimb /submit | Idem, explicite |
+| @zimb /status T-XXXX | Lit statut via pi.zimb.app |
+| @zimb /issue mon probl�me | **V2** : publie Issue sur le repo courant |
+| @zimb /issue owner/repo mon probl�me | Override du repo cible |
+
+### 7.5 Pourquoi pas de board centralis� ?
+
+- ? **Proximit� du code** : le bounty est � c�t� du bug
+- ? **Permissions naturelles** : le senior push sur le repo du demandeur (qu'il conna�t)
+- ? **Pas de cross-account** : pas besoin de grant access � un repo externe
+- ? **Notification native** : le demandeur voit le bounty dans SES Issues
+- ? **Webhooks simplifi�s** : un webhook par repo (le bot d�tecte auto)
+
+### 7.6 Code livr� (�tat au 2026-09-17)
+
+- packages/extension/src/services/issueCreator.ts � d�tecte le remote, cr�e l'Issue
+- packages/extension/src/commands/issueNotifier.ts � banni�re VS Code
+- packages/extension/src/commands.ts � commande zimb.claimIssue(Interactive)
+- packages/extension/src/chat/participant.ts � branche /issue
+- packages/extension/src/services/repoDetector.ts � d�tecte owner/repo depuis git remote
+
+### 7.7 �tapes suivantes (M3 ? M4)
+
+1. ? Installer @zimb-bot sur le repo du demandeur (one-click via UI GitHub)
+2. ? Webhook issues.assigned ? appel POST /tickets/:id/claim c�t� api.zimb.app
+3. ? Webhook pull_request.merged ? POST /tickets/:id/deliver
+4. ? Stripe Connect escrow pour le paiement
+
+---
+
+*Document maintenu par l'�quipe Zimb � Derni�re mise � jour : 2026-09-17 (V2)*

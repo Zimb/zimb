@@ -1,46 +1,58 @@
 /**
- * Auth middleware — M1+M2 stub.
+ * Auth middleware — M3.1 (JWT enforced, no more X-Debug-Senior in prod).
  *
- * In M1+M2, we accept EITHER:
- *   1. A real Bearer JWT (signed with JWT_SECRET) → real user
- *   2. An `X-Debug-Senior: <login>` header → for local smoke tests only
- *      (rejected in production by checking ENVIRONMENT !== 'development')
+ * Path 1 — Bearer JWT (mandatory in staging/production):
+ *   Authorization: Bearer <jwt>
+ *   → verifies HS256 signature against JWT_SECRET, populates c.get('auth')
  *
- * In M3, replace this with proper GitHub OAuth JWT verification (see
- * recipes/01-creation-ticket.md CT-VSC-01).
+ * Path 2 — Debug header (development only):
+ *   X-Debug-Senior: <login>
+ *   → stubbed identity, ONLY accepted when ENVIRONMENT === 'development'.
+ *
+ * The `requireRole(...)` helper mounts a downstream guard.
  */
 import type { Context, MiddlewareHandler } from 'hono';
 import type { Env } from '../types/env';
-import { jwtVerify } from 'jose';
+import { verifySessionToken, type Role } from '../services/auth';
 
 export const authMiddleware: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
   const auth = c.req.header('authorization');
-  const debugSenior = c.req.header('x-debug-senior');
+  const debugHeader = c.req.header('x-debug-senior');
 
-  let userId: string | undefined;
-  let ghLogin: string | undefined;
-  let role: 'client' | 'senior' | 'reviewer' | 'admin' | undefined;
+  let userId: string;
+  let ghLogin: string;
+  let role: Role;
 
-  // Path 1: real JWT Bearer (preferred in production)
+  // ── Path 1: JWT Bearer ───────────────────────────────────────
   if (auth?.startsWith('Bearer ')) {
     const token = auth.slice(7);
     try {
-      const secret = new TextEncoder().encode(c.env.JWT_SECRET);
-      const { payload } = await jwtVerify(token, secret);
-      userId = String(payload.sub);
-      ghLogin = String(payload.gh_login ?? '');
-      role = (payload.role as 'client' | 'senior' | 'reviewer' | 'admin') ?? 'client';
-    } catch {
-      return c.json({ ok: false, error: { code: 'invalid_token', message: 'Invalid JWT' } }, 401);
+      const claims = await verifySessionToken(c.env, token);
+      userId = claims.sub;
+      ghLogin = claims.gh_login;
+      role = claims.role;
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : 'invalid_token';
+      return c.json(
+        { ok: false, error: { code: 'invalid_token', message: `Invalid JWT: ${reason}` } },
+        401
+      );
     }
   }
-  // Path 2: debug header (only in development)
-  else if (debugSenior && c.env.ENVIRONMENT === 'development') {
-    userId = debugSenior;
-    ghLogin = debugSenior;
-    role = debugSenior.startsWith('senior-') ? 'senior' : 'client';
+  // ── Path 2: Debug header (development only) ──────────────────
+  else if (debugHeader && c.env.ENVIRONMENT === 'development') {
+    console.warn(`[auth] DEBUG MODE — accepting X-Debug-Senior=${debugHeader}`);
+    userId = `dev-${debugHeader}`;
+    ghLogin = debugHeader;
+    role = debugHeader.startsWith('senior-')
+      ? 'senior'
+      : debugHeader.startsWith('reviewer-')
+      ? 'reviewer'
+      : debugHeader.startsWith('admin-')
+      ? 'admin'
+      : 'client';
   }
-  // Anonymous: use a generated ID (for unauth endpoints)
+  // ── Path 3: Anonymous (unauth endpoints) ─────────────────────
   else {
     userId = `anon-${crypto.randomUUID()}`;
     ghLogin = 'anonymous';
@@ -52,3 +64,32 @@ export const authMiddleware: MiddlewareHandler<{ Bindings: Env }> = async (c, ne
 
   await next();
 };
+
+/**
+ * Role guard — call AFTER `authMiddleware` in the chain.
+ *
+ * Usage:
+ *   app.use('/tickets/:id/claim', authMiddleware, requireRole('senior'));
+ */
+export function requireRole(...allowed: Role[]): MiddlewareHandler<{ Bindings: Env }> {
+  return async (c, next) => {
+    const { role } = c.get('auth');
+    if (!allowed.includes(role)) {
+      return c.json(
+        {
+          ok: false,
+          error: {
+            code: 'forbidden',
+            message: `Required role: ${allowed.join(' | ')}, got '${role}'`,
+          },
+        },
+        403
+      );
+    }
+    await next();
+  };
+}
+
+export function getAuth(c: Context<{ Bindings: Env }>) {
+  return c.get('auth');
+}

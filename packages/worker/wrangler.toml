@@ -6,6 +6,11 @@ main = "src/index.ts"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
+# Pin local dev to port 8787 (consistent with verify:github script + docs)
+[dev]
+port = 8787
+local_protocol = "http"
+
 # Production
 [env.production]
 name = "zimb-api"
