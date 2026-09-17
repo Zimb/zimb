@@ -21,9 +21,12 @@ zimb/
 │   ├── extension/   # @zimb/extension — VS Code / Copilot @zimb chat
 │   └── landing/     # @zimb/landing — Astro landing (zimb.app)
 ├── SPECIFICATIONS.md # Spec technique & produit exhaustive
-├── CDC.md            # Cahier des charges contractuel
+├── CDC.md            # Cahier des charges contractuel (French)
+├── CDC.en.md         # Software Requirements Specification (English)
 ├── recettes/         # 64 scénarios Gherkin + template bug
 ├── FOUNDER_NOTES.md  # Notes originales du fondateur (source de vérité v0)
+├── FOUNDER_NOTES.en.md # Founder notes (English translation)
+├── docs/             # Concept review and architectural pivot analysis
 └── .github/
     ├── agents/       # 8 agents custom Copilot spécialisés
     └── workflows/    # CI GitHub Actions

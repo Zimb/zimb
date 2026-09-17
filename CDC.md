@@ -4,6 +4,8 @@
 >
 > Document contractuel de cadrage pour prestataires externes ou équipe interne.
 > Version : 1.0 — 2026-09-16
+>
+> [English version available here](CDC.en.md)
 
 ---
 

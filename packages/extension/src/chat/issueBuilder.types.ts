@@ -37,9 +37,9 @@ export function parseStructuredIssue(raw: string): StructuredIssue | null {
   if (braceStart === -1 || braceEnd === -1 || braceEnd <= braceStart) return null;
   json = json.slice(braceStart, braceEnd + 1);
 
-  let obj: any;
+  let obj: Record<string, unknown>;
   try {
-    obj = JSON.parse(json);
+    obj = JSON.parse(json) as Record<string, unknown>;
   } catch {
     return null;
   }
