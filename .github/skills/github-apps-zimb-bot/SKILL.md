@@ -154,6 +154,7 @@ export async function archiveRepo(ticketId: string) {
 | `webhooks.verify` lit le body comme string | NE PAS appeler `request.json()` avant `verify` |
 | `privateKey` PEM doit commencer par `-----BEGIN RSA PRIVATE KEY-----` | Si format PKCS#8 (`BEGIN PRIVATE KEY`), Octokit le supporte aussi |
 | Le repo peut être supprimé entre le claim et le push | Tester avec `GET /repos/{owner}/{repo}` avant chaque op |
+| Installation organisation bloquée (seul le bouton "Edit" apparaît) | Définir "Where can this GitHub App be installed?" sur "Any account" (ou transférer l'App à l'organisation sous Advanced). L'utilisateur doit être Organization Owner ou GitHub App Manager. Détails: `docs/GITHUB_APP_ORG_INSTALLATION.md` |
 
 ## Checklist pré-codage
 

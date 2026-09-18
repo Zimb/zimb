@@ -11,6 +11,7 @@ yarn-error.log*
 dist/
 build/
 .next/
+.astro/
 out/
 .vercel/
 .turbo/

@@ -171,17 +171,22 @@ if (targetInstRes.status === 404) {
   console.log('');
   console.log('  2. Go to the App page:');
   console.log('       https://github.com/settings/apps/4972133');
+  console.log('       Ensure "Where can this GitHub App be installed?" is set to "Any account"');
+  console.log('       (under General settings, or transfer ownership under Advanced).');
   console.log('');
   console.log('  3. In the LEFT MENU, click "Install App" (NOT "Edit"):');
   console.log('       https://github.com/settings/apps/4972133/installations');
   console.log('');
-  console.log('  4. You should see two buttons:');
+  console.log('  4. You should see:');
   console.log('       - "Install on your account Zimb" (already done if installation # exists above)');
   console.log('       - "Install on organization Zimb-app"  ← CLICK THIS');
   console.log('');
   console.log('  5. On the next screen, pick "All repositories" → Install.');
   console.log('');
-  console.log('  If "Zimb-app" does NOT appear in step 4, the org was not created.');
+  console.log('  Note: Installing user must be an Organization Owner or GitHub App Manager.');
+  console.log('  If "Zimb-app" does NOT appear in step 4, verify the org exists and that');
+  console.log('  the app installation policy is set to "Any account".');
+  console.log('  See docs/GITHUB_APP_ORG_INSTALLATION.md for complete guide.');
 }
 
 console.log('');
