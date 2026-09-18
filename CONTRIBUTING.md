@@ -81,6 +81,38 @@ code --install-extension zimb-vscode-0.1.0.vsix --force
 
 ---
 
+## 🤖 Install the @zimb-bot GitHub App
+
+**Prerequisites:**
+- A GitHub account
+- **Organization Owner** or **GitHub App Manager** role (if installing on an organization)
+- Admin or write permissions on target repositories
+- If you own the GitHub App: the app setting **"Where can this GitHub App be installed?"** must be set to **"Any account"** (or app ownership transferred to the organization)
+
+### Installation Steps
+
+1. Navigate to https://github.com/apps/zimb-bot (or inside developer settings at https://github.com/settings/apps/<app-slug>/installations).
+2. Click **Install** (green button).
+3. Select the target organization or personal account (e.g. `Zimb` or `Zimb-app`).
+4. Select repository access:
+   - **All repositories** — recommended for complete automation across bounties.
+   - **Only select repositories** — start with designated repositories (e.g. `Zimb/zimb`).
+5. Click **Install & Authorize**.
+
+### Organization Installation Troubleshooting
+
+If you own the GitHub App and see only an **Edit** button under `Developer settings -> GitHub Apps`, or your organization does not appear in the installation menu:
+1. Under `Developer settings -> GitHub Apps`, click **Edit** next to the app.
+2. In the **General** settings tab, locate **"Where can this GitHub App be installed?"**.
+3. Select **"Any account"** (by default, personal apps are restricted to "Only on this account").
+4. Click **Save changes**.
+5. In the left navigation sidebar, click **Install App**, select your target organization, and complete installation.
+6. Ensure that your GitHub user account has the **Organization Owner** or **GitHub App Manager** role on the target organization.
+
+For comprehensive details, role matrices, and direct installation links, see [docs/GITHUB_APP_ORG_INSTALLATION.md](docs/GITHUB_APP_ORG_INSTALLATION.md).
+
+---
+
 ## 🤖 `@zimb-bot` GitHub App — NOT WORKING YET
 
 > ⚠️ The `@zimb-bot` GitHub App is **code-complete but not deployed**. The handler lives in `packages/worker/src/services/issueCommentHandler.ts`, but the `api.zimb.app` Cloudflare Worker is not deployed, so **the bot cannot react to comments today**.

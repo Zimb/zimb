@@ -10,7 +10,7 @@
     "preview": "astro preview",
     "type-check": "astro check",
     "lint": "eslint src --ext .ts,.astro",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "clean": "rm -rf dist .astro"
   },
   "dependencies": {
