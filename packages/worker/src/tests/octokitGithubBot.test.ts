@@ -26,11 +26,15 @@ const ENV = {
 
 beforeEach(() => {
   mockRequest.mockReset();
-  // Always make the installation lookup succeed on the second call.
-  // The first call (list installations) sets the cached installationId.
   mockRequest.mockImplementation(async (route: string) => {
-    if (route === 'GET /orgs/{org}/installations') {
-      return { data: { installations: [{ id: 162363820 }] } };
+    if (
+      route === 'GET /repos/{owner}/{repo}/installation' ||
+      route === 'GET /orgs/{org}/installation'
+    ) {
+      return { data: { id: 162363820 } };
+    }
+    if (route === 'GET /users/{username}') {
+      return { data: { type: 'Organization' } };
     }
     throw new Error(`Unexpected unmocked request: ${route}`);
   });
@@ -39,7 +43,8 @@ beforeEach(() => {
 describe('OctokitGithubBot', () => {
   it('createTicketRepo POSTs the right payload', async () => {
     mockRequest
-      .mockResolvedValueOnce({ data: { installations: [{ id: 162363820 }] } })
+      .mockResolvedValueOnce({ data: { id: 162363820 } })
+      .mockResolvedValueOnce({ data: { type: 'Organization' } })
       .mockResolvedValueOnce({ data: { html_url: 'https://github.com/Zimb/zimb-T-0001' } });
     const bot = new OctokitGithubBot(ENV);
     const url = await bot.createTicketRepo({ ticketId: 'T-0001', title: 'CORS bug' });
@@ -58,18 +63,19 @@ describe('OctokitGithubBot', () => {
 
   it('createTicketRepo returns existing URL on 422', async () => {
     mockRequest
-      .mockResolvedValueOnce({ data: { installations: [{ id: 162363820 }] } })
+      .mockResolvedValueOnce({ data: { id: 162363820 } })
+      .mockResolvedValueOnce({ data: { type: 'Organization' } })
       .mockRejectedValueOnce({ status: 422 })
       .mockResolvedValueOnce({ data: { html_url: 'https://github.com/Zimb/zimb-T-0002' } });
     const bot = new OctokitGithubBot(ENV);
     const url = await bot.createTicketRepo({ ticketId: 'T-0002', title: 'x' });
     expect(url).toBe('https://github.com/Zimb/zimb-T-0002');
-    expect(mockRequest).toHaveBeenCalledTimes(3);
+    expect(mockRequest).toHaveBeenCalledTimes(4);
   });
 
   it('createBranch fetches main SHA then creates ref', async () => {
     mockRequest
-      .mockResolvedValueOnce({ data: { installations: [{ id: 162363820 }] } })
+      .mockResolvedValueOnce({ data: { id: 162363820 } })
       .mockResolvedValueOnce({ data: { object: { sha: 'abc123' } } })
       .mockResolvedValueOnce({ data: {} });
     const bot = new OctokitGithubBot(ENV);
@@ -89,7 +95,7 @@ describe('OctokitGithubBot', () => {
 
   it('createBranch is idempotent on 422', async () => {
     mockRequest
-      .mockResolvedValueOnce({ data: { installations: [{ id: 162363820 }] } })
+      .mockResolvedValueOnce({ data: { id: 162363820 } })
       .mockResolvedValueOnce({ data: { object: { sha: 'abc' } } })
       .mockRejectedValueOnce({ status: 422 });
     const bot = new OctokitGithubBot(ENV);
@@ -99,7 +105,7 @@ describe('OctokitGithubBot', () => {
 
   it('inviteSenior always uses permission=push', async () => {
     mockRequest
-      .mockResolvedValueOnce({ data: { installations: [{ id: 162363820 }] } })
+      .mockResolvedValueOnce({ data: { id: 162363820 } })
       .mockResolvedValueOnce({ data: {} });
     const bot = new OctokitGithubBot(ENV);
     await bot.inviteSenior({ ticketId: 'T-0001', seniorGhLogin: 'bob' });
@@ -111,7 +117,7 @@ describe('OctokitGithubBot', () => {
 
   it('inviteSenior swallows 422 (already collaborator)', async () => {
     mockRequest
-      .mockResolvedValueOnce({ data: { installations: [{ id: 162363820 }] } })
+      .mockResolvedValueOnce({ data: { id: 162363820 } })
       .mockRejectedValueOnce({ status: 422 });
     const bot = new OctokitGithubBot(ENV);
     await expect(
@@ -121,7 +127,7 @@ describe('OctokitGithubBot', () => {
 
   it('inviteSenior rethrows non-422 errors', async () => {
     mockRequest
-      .mockResolvedValueOnce({ data: { installations: [{ id: 162363820 }] } })
+      .mockResolvedValueOnce({ data: { id: 162363820 } })
       .mockRejectedValueOnce({ status: 500 });
     const bot = new OctokitGithubBot(ENV);
     await expect(
@@ -131,7 +137,7 @@ describe('OctokitGithubBot', () => {
 
   it('revokeSenior swallows 404', async () => {
     mockRequest
-      .mockResolvedValueOnce({ data: { installations: [{ id: 162363820 }] } })
+      .mockResolvedValueOnce({ data: { id: 162363820 } })
       .mockRejectedValueOnce({ status: 404 });
     const bot = new OctokitGithubBot(ENV);
     await expect(
@@ -141,7 +147,7 @@ describe('OctokitGithubBot', () => {
 
   it('revokeSenior rethrows non-404 errors', async () => {
     mockRequest
-      .mockResolvedValueOnce({ data: { installations: [{ id: 162363820 }] } })
+      .mockResolvedValueOnce({ data: { id: 162363820 } })
       .mockRejectedValueOnce({ status: 500 });
     const bot = new OctokitGithubBot(ENV);
     await expect(

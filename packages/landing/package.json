@@ -18,7 +18,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.3",
-    "@astrojs/sitemap": "^3.2.0",
+    "@astrojs/sitemap": "^3.2.1",
     "@types/node": "^22.7.4",
     "eslint": "^8.57.1",
     "eslint-plugin-astro": "^1.2.4",

@@ -14,6 +14,7 @@ build/
 out/
 .vercel/
 .turbo/
+.astro/
 *.tsbuildinfo
 
 # ─── Environment files (NEVER commit) ──────────────────────────────

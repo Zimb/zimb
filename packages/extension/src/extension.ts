@@ -12,7 +12,7 @@ import { ApiClient } from './services/apiClient';
 import { LanguageDetector } from './services/languageDetector';
 import { RepoDetector } from './services/repoDetector';
 import { IssueCreator } from './services/issueCreator';
-import { BountiesProvider, BountyIssue } from './bountiesProvider';
+import { BountiesProvider, type BountyIssue } from './bountiesProvider';
 
 let authService: GitHubAuthService;
 let apiClient: ApiClient;

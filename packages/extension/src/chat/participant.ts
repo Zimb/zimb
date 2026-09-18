@@ -7,7 +7,7 @@ import { notifyNewIssue } from '../commands/issueNotifier';
 import type { BountiesProvider, BountyIssue, BountyStatus } from '../bountiesProvider';
 import { composeIssueViaModel, composeIssueFallback } from './issueBuilder';
 import type { StructuredIssue } from './issueBuilder.types';
-import { parseDirectives, renderDirectivesFrontMatter, type ZimbDirectives } from './directivesParser';
+import { parseDirectives } from './directivesParser';
 import { detectLanguage } from './i18n';
 
 /**
